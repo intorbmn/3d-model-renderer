@@ -30,13 +30,6 @@ jobs:
       - name: Build Rust native engine
         run: cargo build --release --manifest-path rust_engine/Cargo.toml
 
-      - name: Stage Linux native library
-        shell: bash
-        run: |
-          mkdir -p common/src/main/resources/natives/linux-x64
-          cp rust_engine/target/release/libmmd_engine.so \
-            common/src/main/resources/natives/linux-x64/
-
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
