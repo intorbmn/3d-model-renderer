@@ -19,9 +19,9 @@ public enum StagePlaybackUiAdapter implements StagePlaybackUiPort, StageCameraUi
     public void markStageSelectionStartedAndClose() {
         Minecraft minecraft = Minecraft.getInstance();
         Runnable action = () -> {
-            if (minecraft.screen instanceof StageSelectScreen screen) {
+            if (minecraft.gui.screen() instanceof StageSelectScreen screen) {
                 screen.markStartedByHost();
-                minecraft.setScreen(null);
+                minecraft.gui.setScreen(null);
             }
         };
         if (minecraft.isSameThread()) {
