@@ -31,11 +31,11 @@ public final class MobReplacementTargets {
     }
 
     public static boolean isSupported(EntityType<?> entityType) {
-        if (entityType == EntityType.PLAYER) {
+        Identifier entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+        if (entityTypeId == null
+                || Identifier.fromNamespaceAndPath("minecraft", "player").equals(entityTypeId)) {
             return false;
         }
-
-        Identifier entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
         return entityTypeId != null
             && "minecraft".equals(entityTypeId.getNamespace())
             && entityType.getCategory() != MobCategory.MISC;
