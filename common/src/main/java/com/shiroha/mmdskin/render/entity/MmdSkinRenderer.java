@@ -15,7 +15,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
@@ -26,8 +26,8 @@ import org.joml.Vector3f;
  */
 public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
 
-    private static final ResourceLocation PLACEHOLDER_TEXTURE =
-            new ResourceLocation(MmdSkin.MOD_ID, "textures/entity/placeholder.png");
+    private static final Identifier PLACEHOLDER_TEXTURE =
+            Identifier.fromNamespaceAndPath(MmdSkin.MOD_ID, "textures/entity/placeholder.png");
 
     protected final String modelName;
 
@@ -108,7 +108,7 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(T entity) {
+    public Identifier getTextureLocation(T entity) {
         return PLACEHOLDER_TEXTURE;
     }
 }
