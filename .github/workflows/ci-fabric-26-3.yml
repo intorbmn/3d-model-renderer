@@ -49,6 +49,42 @@ jobs:
           echo "== lwjgl / sdl jars"
           find ~/.gradle -type f \( -name 'lwjgl*.jar' -o -name '*sdl*.jar' \) ! -name '*sources*' 2>/dev/null | sed 's#.*/##' | sort -u | head -60
 
+      - name: Dump public API of key Minecraft 26.3 classes (diagnostic)
+        if: always()
+        run: |
+          set +e
+          JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
+          for c in \
+            net.minecraft.client.gui.GuiGraphicsExtractor \
+            net.minecraft.client.gui.screens.Screen \
+            net.minecraft.client.Minecraft \
+            net.minecraft.client.KeyMapping \
+            com.mojang.blaze3d.platform.InputConstants \
+            com.mojang.blaze3d.platform.Window \
+            com.mojang.blaze3d.vertex.PoseStack \
+            com.mojang.blaze3d.vertex.VertexConsumer \
+            com.mojang.blaze3d.vertex.BufferBuilder \
+            com.mojang.blaze3d.systems.RenderSystem \
+            net.minecraft.client.renderer.GameRenderer \
+            net.minecraft.client.renderer.RenderPipelines \
+            net.minecraft.client.renderer.entity.EntityRenderer \
+            net.minecraft.client.renderer.entity.LivingEntityRenderer \
+            net.minecraft.client.renderer.entity.player.AvatarRenderer \
+            net.minecraft.client.renderer.entity.EntityRendererProvider \
+            net.minecraft.client.player.FirstPersonHandsAndItems \
+            net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer \
+            net.minecraft.client.player.ClientInput \
+            net.minecraft.client.player.KeyboardInput \
+            net.minecraft.client.input.KeyEvent \
+            net.minecraft.client.input.MouseButtonEvent \
+            net.minecraft.client.Camera \
+            net.minecraft.client.MouseHandler; do
+            echo "##### $c"
+            javap -public -cp "$JAR" "$c" 2>&1 | head -150
+          done
+          echo "##### classes named like Renderer for players / vertex format / item use"
+          unzip -Z1 "$JAR" | grep -E '(PlayerRenderer|AvatarRenderer|VertexFormat|ItemUseAnimation|UseAnim|ResourceLocation|Identifier)\.class$' | head -20
+
       - name: Upload compile reports
         if: always()
         uses: actions/upload-artifact@v4
