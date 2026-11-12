@@ -46,7 +46,7 @@ public enum StagePlaybackUiAdapter implements StagePlaybackUiPort, StageCameraUi
     public void closeStageSelectionIfOpen() {
         Minecraft minecraft = Minecraft.getInstance();
         Runnable action = () -> {
-            if (minecraft.screen instanceof StageSelectScreen screen) {
+            if (minecraft.gui.screen() instanceof StageSelectScreen screen) {
                 screen.prepareForExternalClose();
                 minecraft.gui.setScreen(null);
             }
