@@ -1,7 +1,3 @@
-architectury {
-    common("fabric")
-}
-
 def nativeResourcesDir = layout.buildDirectory.dir("generated/native-resources")
 
 def currentOs = System.getProperty("os.name").toLowerCase()
