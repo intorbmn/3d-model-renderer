@@ -8,7 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
 import org.apache.logging.log4j.LogManager;
@@ -22,8 +22,8 @@ import java.util.UUID;
 public class MmdSkinRegisterCommon {
     private static final Logger logger = LogManager.getLogger();
 
-    public static ResourceLocation SKIN_C2S = new ResourceLocation("3d-skin", "network_c2s");
-    public static ResourceLocation SKIN_S2C = new ResourceLocation("3d-skin", "network_s2c");
+    public static Identifier SKIN_C2S = Identifier.fromNamespaceAndPath("3d-skin", "network_c2s");
+    public static Identifier SKIN_S2C = Identifier.fromNamespaceAndPath("3d-skin", "network_s2c");
 
     public static void Register() {
         ServerPlayNetworking.registerGlobalReceiver(SKIN_C2S, (server, player, handler, buf, responseSender) -> {
