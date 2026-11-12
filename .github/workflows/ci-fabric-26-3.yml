@@ -37,6 +37,9 @@ jobs:
           rustc --version
           cargo --version
 
+      - name: Prepare Gradle wrapper
+        run: chmod +x ./gradlew
+
       - name: Build Fabric 26.3
         run: ./gradlew :fabric:build --no-daemon --stacktrace
 
