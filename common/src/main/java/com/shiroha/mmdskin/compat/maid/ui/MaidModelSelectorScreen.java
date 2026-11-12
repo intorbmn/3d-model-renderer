@@ -5,7 +5,7 @@ import com.shiroha.mmdskin.compat.maid.service.DefaultMaidModelSelectionService;
 import com.shiroha.mmdskin.compat.maid.service.MaidModelSelectionService;
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -61,7 +61,7 @@ public class MaidModelSelectorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         updateLayout();
         updateHoverState(mouseX, mouseY);
         updateScrollAnimation();
@@ -70,9 +70,12 @@ public class MaidModelSelectorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) {
-            return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) {
+            return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
             return super.mouseClicked(mouseX, mouseY, button);
@@ -105,12 +108,15 @@ public class MaidModelSelectorScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.keycode();
+        int modifiers = event.modifiers();
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             this.onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
@@ -118,7 +124,7 @@ public class MaidModelSelectorScreen extends Screen {
         return false;
     }
 
-    private void renderScreen(GuiGraphics guiGraphics) {
+    private void renderScreen(GuiGraphicsExtractor guiGraphics) {
         TranslucentTrayChrome.drawOverlay(guiGraphics, this.width, this.height);
         drawPanel(guiGraphics, layout.panel);
         drawHeader(guiGraphics);
@@ -126,26 +132,26 @@ public class MaidModelSelectorScreen extends Screen {
         drawModelList(guiGraphics);
     }
 
-    private void drawHeader(GuiGraphics guiGraphics) {
-        guiGraphics.drawString(this.font, this.title, layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
-        guiGraphics.drawString(this.font, shorten(maidName, 24), layout.header.x, layout.header.y + 11, TranslucentTrayChrome.SUBTITLE_TEXT, false);
-        guiGraphics.drawString(this.font,
+    private void drawHeader(GuiGraphicsExtractor guiGraphics) {
+        guiGraphics.text(this.font, this.title, layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
+        guiGraphics.text(this.font, shorten(maidName, 24), layout.header.x, layout.header.y + 11, TranslucentTrayChrome.SUBTITLE_TEXT, false);
+        guiGraphics.text(this.font,
                 Component.translatable("gui.mmdskin.model_selector.stats",
                         Math.max(0, modelCards.size() - 1),
                         shorten(currentModel, 14)),
                 layout.header.x, layout.header.y + 21, TranslucentTrayChrome.DETAIL_TEXT, false);
     }
 
-    private void drawButtons(GuiGraphics guiGraphics) {
+    private void drawButtons(GuiGraphicsExtractor guiGraphics) {
         drawButton(guiGraphics, layout.doneButton, Component.translatable("gui.done").getString(), hoveredButton == ButtonTarget.DONE);
         drawButton(guiGraphics, layout.refreshButton, Component.translatable("gui.mmdskin.refresh").getString(), hoveredButton == ButtonTarget.REFRESH);
     }
 
-    private void drawModelList(GuiGraphics guiGraphics) {
+    private void drawModelList(GuiGraphicsExtractor guiGraphics) {
         UiRect list = layout.listBox;
         TranslucentTrayChrome.fillListArea(guiGraphics, list.x, list.y, list.w, list.h);
         if (modelCards.isEmpty()) {
-            guiGraphics.drawCenteredString(this.font, "No models", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.BODY_TEXT);
+            guiGraphics.centeredText(this.font, "No models", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.BODY_TEXT);
             return;
         }
 
@@ -166,15 +172,15 @@ public class MaidModelSelectorScreen extends Screen {
         drawScrollBar(guiGraphics, list);
     }
 
-    private void drawModelCard(GuiGraphics guiGraphics, UiRect list, int y, String modelName, boolean hovered) {
+    private void drawModelCard(GuiGraphicsExtractor guiGraphics, UiRect list, int y, String modelName, boolean hovered) {
         boolean selected = modelName.equals(currentModel);
         int bg = TranslucentTrayChrome.cardBackground(selected, hovered);
         guiGraphics.fill(list.x + 4, y, list.x + list.w - 4, y + CARD_HEIGHT, bg);
         guiGraphics.fill(list.x + 4, y, list.x + 6, y + CARD_HEIGHT, selected ? TranslucentTrayChrome.ACCENT_STRIP_ACTIVE : TranslucentTrayChrome.ACCENT_STRIP);
-        guiGraphics.drawString(this.font, shorten(modelName, 24), list.x + 10, y + 4, TranslucentTrayChrome.BODY_TEXT, false);
+        guiGraphics.text(this.font, shorten(modelName, 24), list.x + 10, y + 4, TranslucentTrayChrome.BODY_TEXT, false);
     }
 
-    private void drawScrollBar(GuiGraphics guiGraphics, UiRect list) {
+    private void drawScrollBar(GuiGraphicsExtractor guiGraphics, UiRect list) {
         float maxScroll = maxScroll();
         if (maxScroll <= 0.0f) {
             return;
@@ -189,11 +195,11 @@ public class MaidModelSelectorScreen extends Screen {
         guiGraphics.fill(barX, thumbY, barX + 2, thumbY + thumbHeight, TranslucentTrayChrome.SCROLL_THUMB);
     }
 
-    private void drawButton(GuiGraphics guiGraphics, UiRect rect, String text, boolean hovered) {
+    private void drawButton(GuiGraphicsExtractor guiGraphics, UiRect rect, String text, boolean hovered) {
         TranslucentTrayChrome.drawButton(guiGraphics, this.font, rect.x, rect.y, rect.w, rect.h, text, hovered, true);
     }
 
-    private void drawPanel(GuiGraphics guiGraphics, UiRect rect) {
+    private void drawPanel(GuiGraphicsExtractor guiGraphics, UiRect rect) {
         TranslucentTrayChrome.drawPanel(guiGraphics, rect.x, rect.y, rect.w, rect.h);
     }
 
@@ -276,9 +282,9 @@ public class MaidModelSelectorScreen extends Screen {
     }
 
     private void flushPendingActions(Minecraft minecraft) {
-        if (pendingClose && minecraft.screen == this) {
+        if (pendingClose && minecraft.gui.screen() == this) {
             pendingClose = false;
-            minecraft.setScreen(null);
+            minecraft.gui.setScreen(null);
         }
     }
 
