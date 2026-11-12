@@ -233,7 +233,7 @@ public final class MMDCameraController {
             minecraft.gui.setScreen(null);
             return;
         }
-        if (minecraft.screen != null) {
+        if (minecraft.gui.screen() != null) {
             return;
         }
 
