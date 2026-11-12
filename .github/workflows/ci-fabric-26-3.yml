@@ -1,0 +1,51 @@
+name: MPR Fabric 26.3 CI
+
+on:
+  push:
+    branches:
+      - port/mc-26.3
+  pull_request:
+    branches:
+      - port/mc-26.3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-fabric:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository and Rust submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Show toolchain
+        run: |
+          java -version
+          rustc --version
+          cargo --version
+
+      - name: Build Fabric 26.3
+        run: ./gradlew :fabric:build --no-daemon --stacktrace
+
+      - name: Upload Fabric build outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpr-fabric-26.3-build
+          path: |
+            fabric/build/libs/*.jar
+            fabric/build/reports/**
+          if-no-files-found: ignore
