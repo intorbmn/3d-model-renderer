@@ -321,7 +321,7 @@ jobs:
           cp native-libs/native-android-arm64/libmmd_engine.so common/src/main/resources/natives/android-arm64/
           cp "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" common/src/main/resources/natives/android-arm64/
 
-      - name: Setup JDK 17
+      - name: Setup JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
@@ -334,7 +334,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon -x test
+        run: ./gradlew build --no-daemon -x test -x prepareNativeResources -x buildRustNative
 
       - name: Upload Fabric Mod
         uses: actions/upload-artifact@v4
@@ -401,7 +401,7 @@ jobs:
           cp "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" common/src/main/resources/natives/android-arm64/
           cp "$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so" common/src/main/resources/natives/android-amd64/
 
-      - name: Setup JDK 17
+      - name: Setup JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
@@ -414,7 +414,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build --no-daemon -x test
+        run: ./gradlew build --no-daemon -x test -x prepareNativeResources -x buildRustNative
 
       - name: Rename JARs to universal
         run: |
@@ -434,7 +434,7 @@ jobs:
 
   # ==================== 统一发布 ====================
   release:
-    needs: [build-rust-windows-x64, build-rust-windows-arm64, build-rust-linux-x64, build-rust-linux-arm64, build-rust-macos-x64, build-rust-macos-arm64, build-rust-android-arm64, build-rust-android-amd64, build-rust-linux-loongarch64, build-rust-linux-riscv64, build-java-universal]
+    needs: [build-rust-windows-x64, build-rust-windows-arm64, build-rust-linux-x64, build-rust-linux-arm64, build-rust-macos-x64, build-rust-macos-arm64, build-rust-android-arm64, build-rust-android-amd64, build-rust-linux-loongarch64, build-rust-linux-riscv64, build-java-universal, build-java]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -459,7 +459,7 @@ jobs:
           mv artifacts/native-android-amd64/libmmd_engine.so "artifacts/native-android-amd64/libmmd_engine-android-amd64_${GITHUB_REF_NAME}.so"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/mmdskin-fabric-*/*.jar
