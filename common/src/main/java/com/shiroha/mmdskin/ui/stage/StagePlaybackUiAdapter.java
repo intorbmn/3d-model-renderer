@@ -34,7 +34,7 @@ public enum StagePlaybackUiAdapter implements StagePlaybackUiPort, StageCameraUi
     @Override
     public void openStageSelection() {
         Minecraft minecraft = Minecraft.getInstance();
-        Runnable action = () -> minecraft.setScreen(new StageSelectScreen());
+        Runnable action = () -> minecraft.gui.setScreen(new StageSelectScreen());
         if (minecraft.isSameThread()) {
             action.run();
         } else {
@@ -48,7 +48,7 @@ public enum StagePlaybackUiAdapter implements StagePlaybackUiPort, StageCameraUi
         Runnable action = () -> {
             if (minecraft.screen instanceof StageSelectScreen screen) {
                 screen.prepareForExternalClose();
-                minecraft.setScreen(null);
+                minecraft.gui.setScreen(null);
             }
         };
         if (minecraft.isSameThread()) {
