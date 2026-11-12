@@ -20,7 +20,7 @@ public class InventoryRenderHelper {
     public static boolean isInventoryScreen() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.gui.screen() == null) return false;
-        String className = mc.screen.getClass().getName();
+        String className = mc.gui.screen().getClass().getName();
         return className.contains("InventoryScreen") || className.contains("class_490");
     }
 
@@ -33,15 +33,15 @@ public class InventoryRenderHelper {
         modelViewStack.pushPose();
 
         int posX, posY;
-        if (mc.gameMode.getPlayerMode() != GameType.CREATIVE && mc.screen instanceof InventoryScreen) {
-            InventoryScreen invScreen = (InventoryScreen) mc.screen;
-            posX = invScreen.getRecipeBookComponent().updateScreenPosition(mc.screen.width, 176);
-            posY = (mc.screen.height - 166) / 2;
+        if (mc.gameMode.getPlayerMode() != GameType.CREATIVE && mc.gui.screen() instanceof InventoryScreen) {
+            InventoryScreen invScreen = (InventoryScreen) mc.gui.screen();
+            posX = invScreen.getRecipeBookComponent().updateScreenPosition(mc.gui.screen().width, 176);
+            posY = (mc.gui.screen().height - 166) / 2;
             modelViewStack.translate(posX + 51, posY + 75, 50);
             modelViewStack.scale(1.5f, 1.5f, 1.5f);
         } else {
-            posX = (mc.screen.width - 121) / 2;
-            posY = (mc.screen.height - 195) / 2;
+            posX = (mc.gui.screen().width - 121) / 2;
+            posY = (mc.gui.screen().height - 195) / 2;
             modelViewStack.translate(posX + 51, posY + 75, 50.0);
         }
 
