@@ -19,7 +19,7 @@ public class InventoryRenderHelper {
 
     public static boolean isInventoryScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen == null) return false;
+        if (mc.gui.screen() == null) return false;
         String className = mc.screen.getClass().getName();
         return className.contains("InventoryScreen") || className.contains("class_490");
     }
