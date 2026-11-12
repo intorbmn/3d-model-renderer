@@ -229,8 +229,8 @@ public final class MMDCameraController {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen instanceof PauseScreen) {
-            minecraft.setScreen(null);
+        if (minecraft.gui.screen() instanceof PauseScreen) {
+            minecraft.gui.setScreen(null);
             return;
         }
         if (minecraft.screen != null) {
@@ -250,7 +250,7 @@ public final class MMDCameraController {
                         environmentController.leaveCinematicMode(minecraft);
                     }
                     if (minecraft.gui != null) {
-                        minecraft.gui.setOverlayMessage(Component.translatable("gui.mmdskin.stage.esc_hint"), false);
+                        minecraft.gui.hud.setOverlayMessage(Component.translatable("gui.mmdskin.stage.esc_hint"), false);
                     }
                 }
             } else if (stateMachine.isWatching()) {
@@ -523,7 +523,7 @@ public final class MMDCameraController {
     }
 
     private void computeIntroAndStandby(Minecraft minecraft) {
-        if (minecraft.gameRenderer != null && minecraft.gameRenderer.getMainCamera() != null) {
+        if (minecraft.gameRenderer != null && minecraft.gameRenderer.mainCamera() != null) {
             var camera = minecraft.gameRenderer.getMainCamera();
             introStartPose = new StageCameraPose(
                     camera.getPosition().x,
@@ -566,7 +566,7 @@ public final class MMDCameraController {
         lastTickTimeNs = now;
 
         if (cinematicMode && lastEscTimeNs != 0L && now - lastEscTimeNs >= DOUBLE_ESC_WINDOW_NS) {
-            Minecraft.getInstance().options.hideGui = true;
+            if (!Minecraft.getInstance().gui.hud.isHidden()) Minecraft.getInstance().gui.hud.toggle();
             lastEscTimeNs = 0L;
         }
 
