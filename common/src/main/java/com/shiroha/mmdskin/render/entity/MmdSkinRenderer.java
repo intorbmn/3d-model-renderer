@@ -81,8 +81,8 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         PoseStack modelViewStack = RenderSystem.getModelViewStack();
 
-        int posX = (mc.screen.width - 176) / 2;
-        int posY = (mc.screen.height - 166) / 2;
+        int posX = (mc.gui.screen().width - 176) / 2;
+        int posY = (mc.gui.screen().height - 166) / 2;
         modelViewStack.translate(posX + 51, posY + 60, 50.0);
         modelViewStack.pushPose();
         modelViewStack.scale(20.0f, 20.0f, -20.0f);
