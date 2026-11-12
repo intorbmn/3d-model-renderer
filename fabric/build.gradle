@@ -1,7 +1,4 @@
-// 负责 Fabric 平台的依赖装配、阴影打包与重映射发布。
-plugins {
-	id 'com.gradleup.shadow' version '8.3.6'
-}
+// Fabric platform dependencies and release packaging.
 
 loom {
 	mods {
@@ -32,11 +29,6 @@ loom {
 			runDir "run/server"
 		}
 	}
-}
-
-configurations {
-	shadowCommon
-	shadowBundle
 }
 
 repositories {
@@ -75,11 +67,10 @@ repositories {
 dependencies {
 	// Fabric Loom non-remap uses the ordinary project output.
 	implementation(project(":common")) { transitive = false }
-	shadowCommon(project(":common")) { transitive = false }
 	
-	// JLayer 运行时由平台包私有化，避免与其他模组的 JPMS 模块导出冲突。
-	compileOnly("javazoom:jlayer:1.0.1") { transitive = false }
-	shadowBundle("javazoom:jlayer:1.0.1") { transitive = false }
+	// Bundle JLayer as a nested Fabric mod dependency; this does not relocate its packages.
+	implementation("javazoom:jlayer:1.0.1") { transitive = false }
+	include("javazoom:jlayer:1.0.1")
 
 	// Skiko / Skia（轮盘 UI 平滑渲染）
 
@@ -123,40 +114,17 @@ processResources {
 	}
 }
 
-shadowJar {
-    exclude "architectury.common.json"
-    configurations = [project.configurations.shadowCommon, project.configurations.shadowBundle]
-    archiveClassifier.set("dev-shadow")
-    relocate "javazoom", "com.shiroha.mmdskin.shadow.javazoom"
-    
-    // 排除不需要的文件
-    exclude 'META-INF/versions/**'
-    
-    // 强制更新 META-INF/services 里的类名
-    mergeServiceFiles()
-    
-    // 排除 module-info.class 避免 JPMS 冲突
-    exclude 'module-info.class'
-}
-
 jar {
-	archiveClassifier.set("dev")
+	dependsOn(":common:classes")
+	from(project(":common").sourceSets.main.output)
 	from("${rootProject.projectDir}/LICENSE") {
-		rename { "${it}_${base.archivesName.get()}"}
+		rename { "${it}_${base.archivesName.get()}" }
 	}
 }
-sourcesJar {
-    // Avoid duplicate entries when merging common sources
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    def commonSources = project(':common').sourcesJar
-    dependsOn commonSources
-    from commonSources.archiveFile.map { zipTree(it) }
-}
 
-components.java {
-    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
-        skip()
-    }
+sourcesJar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from(project(":common").sourceSets.main.allSource)
 }
 
 sourceSets {
