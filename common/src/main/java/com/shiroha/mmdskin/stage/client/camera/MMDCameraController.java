@@ -105,7 +105,7 @@ public final class MMDCameraController {
             anchorX = minecraft.player.getX();
             anchorY = minecraft.player.getY();
             anchorZ = minecraft.player.getZ();
-            anchorYaw = minecraft.player.getYRot();
+            anchorYaw = minecraft.player.yRot();
             minecraft.player.setXRot(0.0f);
             minecraft.player.setYRot(anchorYaw);
             minecraft.player.yHeadRot = anchorYaw;
@@ -381,7 +381,7 @@ public final class MMDCameraController {
         anchorX = host.getX();
         anchorY = host.getY();
         anchorZ = host.getZ();
-        anchorYaw = host.getYRot();
+        anchorYaw = host.yRot();
         watchingHostUUID = hostUUID;
 
         cinematicMode = StageConfig.getInstance().cinematicMode;
@@ -468,7 +468,7 @@ public final class MMDCameraController {
             anchorX = minecraft.player.getX();
             anchorY = minecraft.player.getY();
             anchorZ = minecraft.player.getZ();
-            anchorYaw = minecraft.player.getYRot();
+            anchorYaw = minecraft.player.yRot();
         }
 
         computeIntroAndStandby(minecraft);
@@ -524,13 +524,13 @@ public final class MMDCameraController {
 
     private void computeIntroAndStandby(Minecraft minecraft) {
         if (minecraft.gameRenderer != null && minecraft.gameRenderer.mainCamera() != null) {
-            var camera = minecraft.gameRenderer.getMainCamera();
+            var camera = minecraft.gameRenderer.mainCamera();
             introStartPose = new StageCameraPose(
-                    camera.getPosition().x,
-                    camera.getPosition().y,
-                    camera.getPosition().z,
-                    camera.getXRot(),
-                    camera.getYRot(),
+                    camera.position().x,
+                    camera.position().y,
+                    camera.position().z,
+                    camera.xRot(),
+                    camera.yRot(),
                     0.0f,
                     (float) minecraft.options.fov().get()
             );
@@ -539,8 +539,8 @@ public final class MMDCameraController {
                     minecraft.player.getX(),
                     minecraft.player.getEyeY(),
                     minecraft.player.getZ(),
-                    minecraft.player.getXRot(),
-                    minecraft.player.getYRot(),
+                    minecraft.player.xRot(),
+                    minecraft.player.yRot(),
                     0.0f,
                     (float) minecraft.options.fov().get()
             );
@@ -623,7 +623,7 @@ public final class MMDCameraController {
                 anchorX = host.getX();
                 anchorY = host.getY();
                 anchorZ = host.getZ();
-                anchorYaw = host.getYRot();
+                anchorYaw = host.yRot();
             }
         }
 
