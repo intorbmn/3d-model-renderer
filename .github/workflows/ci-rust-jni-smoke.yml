@@ -27,19 +27,8 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Prepare Gradle wrapper
-        run: chmod +x ./gradlew
-
       - name: Build Linux x64 native library
         run: cargo build --release --manifest-path rust_engine/Cargo.toml
 
-      - name: Stage native library for JNI smoke test
-        run: |
-          mkdir -p common/src/main/resources/natives/linux-x64
-          cp rust_engine/target/release/libmmd_engine.so common/src/main/resources/natives/linux-x64/
-
-      - name: Test Java 25 System.load and JNI GetVersion
-        run: ./gradlew :common:test --no-daemon -x prepareNativeResources -x buildRustNative --stacktrace
+      - name: Load the native library and call GetVersion (no Minecraft needed)
+        run: bash ci/jni-smoke/run.sh
