@@ -1,12 +1,18 @@
 package com.shiroha.mmdskin.ui.wheel;
 
+import net.minecraft.client.input.KeyEvent;
+
+import com.mojang.blaze3d.platform.InputConstants;
+
+import net.minecraft.client.input.MouseButtonEvent;
+
 import com.shiroha.mmdskin.ui.config.MorphWheelConfigScreen;
 import com.shiroha.mmdskin.ui.wheel.service.DefaultMorphWheelService;
 import com.shiroha.mmdskin.ui.wheel.service.MorphOption;
 import com.shiroha.mmdskin.ui.wheel.service.MorphWheelService;
 import com.shiroha.mmdskin.util.KeyMappingUtil;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -58,7 +64,7 @@ public class MorphWheelScreen extends AbstractWheelScreen {
         initMorphSlots();
 
         this.addRenderableWidget(createWheelIconButton(Component.literal("⚙"), btn -> {
-            this.minecraft.setScreen(new MorphWheelConfigScreen(this));
+            this.minecraft.gui.setScreen(new MorphWheelConfigScreen(this));
         }));
     }
 
@@ -70,7 +76,7 @@ public class MorphWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!morphSlots.isEmpty()) {
             renderWheelBase(guiGraphics, mouseX, mouseY, partialTick, buildEntries());
         } else {
@@ -84,7 +90,7 @@ public class MorphWheelScreen extends AbstractWheelScreen {
         }
         renderCenterBubble(guiGraphics, centerText, style.lineColor());
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private List<WheelEntry> buildEntries() {
@@ -97,7 +103,7 @@ public class MorphWheelScreen extends AbstractWheelScreen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && selectedSlot >= 0 && selectedSlot < morphSlots.size()) {
+        if (button == InputConstants.MOUSE_BUTTON_LEFT && selectedSlot >= 0 && selectedSlot < morphSlots.size()) {
             executeMorph(morphSlots.get(selectedSlot));
             return true;
         }
@@ -105,11 +111,14 @@ public class MorphWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.keycode();
+        int modifiers = event.modifiers();
         if (triggerKey != null) {
             com.mojang.blaze3d.platform.InputConstants.Key boundKey = KeyMappingUtil.getBoundKey(triggerKey);
             if (boundKey != null
-                    && boundKey.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                    && boundKey.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYBOARD
                     && boundKey.getValue() == keyCode) {
                 if (selectedSlot >= 0 && selectedSlot < morphSlots.size()) {
                     executeMorph(morphSlots.get(selectedSlot));
@@ -118,7 +127,7 @@ public class MorphWheelScreen extends AbstractWheelScreen {
                 return true;
             }
         }
-        return super.keyReleased(keyCode, scanCode, modifiers);
+        return super.keyReleased(event);
     }
 
     private void executeMorph(MorphSlot slot) {
