@@ -51,9 +51,9 @@ public final class EyeTrackingHelper {
             return;
         }
 
-        float camX = (float) mc.gameRenderer.getMainCamera().getPosition().x;
-        float camY = (float) mc.gameRenderer.getMainCamera().getPosition().y;
-        float camZ = (float) mc.gameRenderer.getMainCamera().getPosition().z;
+        float camX = (float) mc.gameRenderer.mainCamera().position().x;
+        float camY = (float) mc.gameRenderer.mainCamera().position().y;
+        float camZ = (float) mc.gameRenderer.mainCamera().position().z;
 
         float eyeX = (float) Mth.lerp(tickDelta, entity.xo, entity.getX());
         float eyeY = (float) (Mth.lerp(tickDelta, entity.yo, entity.getY()) + entity.getEyeHeight());
