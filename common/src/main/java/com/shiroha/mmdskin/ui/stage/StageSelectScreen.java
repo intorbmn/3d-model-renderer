@@ -1,10 +1,12 @@
 /* 文件职责：提供原生舞台选择界面，并承载房主与成员的舞台配置操作。 */
 package com.shiroha.mmdskin.ui.stage;
 
+import net.minecraft.client.input.MouseButtonEvent;
+
 import com.shiroha.mmdskin.config.StagePack;
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -130,7 +132,7 @@ public class StageSelectScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         updateLayout();
         syncAssignPanel();
         updateHoverState(mouseX, mouseY);
@@ -213,7 +215,10 @@ public class StageSelectScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == 0 && draggingCameraHeight) {
             updateCameraHeight(mouseX);
             return true;
@@ -222,7 +227,7 @@ public class StageSelectScreen extends Screen {
             updateAudioVolume(mouseX);
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
@@ -236,12 +241,13 @@ public class StageSelectScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
         if (assignPanel != null && assignPanel.mouseScrolled(mouseX, mouseY, delta)) {
             return true;
         }
         if (!containsLeftPanel(mouseX, mouseY)) {
-            return super.mouseScrolled(mouseX, mouseY, delta);
+            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
         float step = (float) ((LIST_ROW_HEIGHT + ROW_GAP) * 2.5);
         if (mouseY >= packListTop && mouseY <= packListBottom) {
@@ -252,7 +258,7 @@ public class StageSelectScreen extends Screen {
             motionScroll = Mth.clamp(motionScroll - (float) delta * step, 0.0f, maxMotionScroll());
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -348,17 +354,17 @@ public class StageSelectScreen extends Screen {
         hoveredMotionIndex = resolveHoveredIndex(mouseX, mouseY, motionRowTop, motionScroll, collectMotionFiles().size());
     }
 
-    private void drawHeader(GuiGraphics graphics) {
+    private void drawHeader(GuiGraphicsExtractor graphics) {
         int titleY = leftPanelY + 8;
         int statsY = titleY + this.font.lineHeight + 5;
-        graphics.drawString(this.font, this.title.getString(), leftPanelX + 10, titleY, COLOR_ACCENT, false);
+        graphics.text(this.font, this.title.getString(), leftPanelX + 10, titleY, COLOR_ACCENT, false);
         String stats = wb("packs.count", state.stagePacks().size());
-        graphics.drawString(this.font, stats, leftPanelX + 10, statsY, COLOR_TEXT_MUTED, false);
+        graphics.text(this.font, stats, leftPanelX + 10, statsY, COLOR_TEXT_MUTED, false);
         drawButton(graphics, leftPanelX + LEFT_PANEL_WIDTH - 70, leftPanelY + 8, 60, BUTTON_HEIGHT,
                 Component.translatable("gui.mmdskin.refresh").getString(), hoveredRefresh, false, false, true);
     }
 
-    private void drawPackList(GuiGraphics graphics) {
+    private void drawPackList(GuiGraphicsExtractor graphics) {
         drawSectionLabel(graphics, wb("packs.section"), leftPanelX + 10, packListTop - 14);
         drawListBackground(graphics, leftPanelX + 8, packListTop, LEFT_PANEL_WIDTH - 16, packListBottom - packListTop);
         graphics.enableScissor(leftPanelX + 8, packListTop, leftPanelX + LEFT_PANEL_WIDTH - 8, packListBottom);
@@ -375,21 +381,21 @@ public class StageSelectScreen extends Screen {
             boolean selected = i == state.selectedPackIndex();
             boolean hovered = i == hoveredPackIndex;
             drawRow(graphics, leftPanelX + 10, y, LEFT_PANEL_WIDTH - 20, selected, hovered);
-            graphics.drawString(this.font, shorten(pack.getName(), 16), leftPanelX + 14, y + 4, COLOR_TEXT, false);
+            graphics.text(this.font, shorten(pack.getName(), 16), leftPanelX + 14, y + 4, COLOR_TEXT, false);
             String stats = shortPackStats(pack);
-            graphics.drawString(this.font, stats, leftPanelX + LEFT_PANEL_WIDTH - 14 - this.font.width(stats), y + 4, COLOR_TEXT_MUTED, false);
+            graphics.text(this.font, stats, leftPanelX + LEFT_PANEL_WIDTH - 14 - this.font.width(stats), y + 4, COLOR_TEXT_MUTED, false);
             y += LIST_ROW_HEIGHT + ROW_GAP;
         }
         graphics.disableScissor();
         drawScrollbar(graphics, leftPanelX + LEFT_PANEL_WIDTH - 4, packListTop, packListBottom, packScroll, maxPackScroll());
     }
 
-    private void drawMotionSection(GuiGraphics graphics) {
+    private void drawMotionSection(GuiGraphicsExtractor graphics) {
         drawSectionLabel(graphics, wb("playback.section.short"), leftPanelX + 10, motionHeaderY + 2);
         drawListBackground(graphics, leftPanelX + 8, motionListTop, LEFT_PANEL_WIDTH - 16, motionListBottom - motionListTop);
 
         if (state.selectedPack() == null) {
-            graphics.drawString(this.font, wb("select_pack_hint"), leftPanelX + 12, motionListTop + 6, COLOR_TEXT_DIM, false);
+            graphics.text(this.font, wb("select_pack_hint"), leftPanelX + 12, motionListTop + 6, COLOR_TEXT_DIM, false);
             return;
         }
 
@@ -398,7 +404,7 @@ public class StageSelectScreen extends Screen {
         int y = motionListTop;
         if (!facade.isSessionMember()) {
             drawRow(graphics, leftPanelX + 10, y, LEFT_PANEL_WIDTH - 20, state.selectedHostMotionFileName() == null, hoveredMergeAll);
-            graphics.drawString(this.font, wb("playback.merge_all.short"), leftPanelX + 14, y + 4, COLOR_TEXT, false);
+            graphics.text(this.font, wb("playback.merge_all.short"), leftPanelX + 14, y + 4, COLOR_TEXT, false);
             y += LIST_ROW_HEIGHT + ROW_GAP;
         }
         y = rowY(y, 0, motionScroll);
@@ -413,16 +419,16 @@ public class StageSelectScreen extends Screen {
             }
             boolean selected = !facade.isSessionMember() && motionFile.name.equals(state.selectedHostMotionFileName());
             drawRow(graphics, leftPanelX + 10, y, LEFT_PANEL_WIDTH - 20, selected, i == hoveredMotionIndex);
-            graphics.drawString(this.font, shorten(stripExtension(motionFile.name), 14), leftPanelX + 14, y + 4, COLOR_TEXT, false);
+            graphics.text(this.font, shorten(stripExtension(motionFile.name), 14), leftPanelX + 14, y + 4, COLOR_TEXT, false);
             String tag = motionTag(motionFile);
-            graphics.drawString(this.font, tag, leftPanelX + LEFT_PANEL_WIDTH - 14 - this.font.width(tag), y + 4, COLOR_TEXT_MUTED, false);
+            graphics.text(this.font, tag, leftPanelX + LEFT_PANEL_WIDTH - 14 - this.font.width(tag), y + 4, COLOR_TEXT_MUTED, false);
             y += LIST_ROW_HEIGHT + ROW_GAP;
         }
         graphics.disableScissor();
         drawScrollbar(graphics, leftPanelX + LEFT_PANEL_WIDTH - 4, motionListTop, motionListBottom, motionScroll, maxMotionScroll());
     }
 
-    private void drawFooter(GuiGraphics graphics) {
+    private void drawFooter(GuiGraphicsExtractor graphics) {
         TranslucentTrayChrome.drawSeparator(graphics, leftPanelX + 10, footerTop - 4, LEFT_PANEL_WIDTH - 20);
         if (facade.isSessionMember()) {
             drawToggle(graphics, leftPanelX + 10, useHostCameraY, LEFT_PANEL_WIDTH - 20, 14, facade.isUseHostCamera(), hoveredUseHostCamera,
@@ -444,20 +450,20 @@ public class StageSelectScreen extends Screen {
         String footerText = facade.isSessionMember()
                 ? Component.translatable(facade.isLocalReady() ? "gui.mmdskin.stage.ready_done" : "gui.mmdskin.stage.waiting_host").getString()
                 : (hostCanStart ? wb("ready_to_launch") : Component.translatable("gui.mmdskin.stage.waiting_ready").getString());
-        graphics.drawString(this.font, shorten(footerText, 28), leftPanelX + 10, footerButtonY - 14, COLOR_TEXT_DIM, false);
+        graphics.text(this.font, shorten(footerText, 28), leftPanelX + 10, footerButtonY - 14, COLOR_TEXT_DIM, false);
     }
 
-    private void drawCameraSlider(GuiGraphics graphics) {
+    private void drawCameraSlider(GuiGraphicsExtractor graphics) {
         String label = wb("camera_height.short") + ": " + String.format(Locale.ROOT, "%+.2f", state.cameraHeightOffset());
-        graphics.drawString(this.font, label, leftPanelX + 10, cameraSliderLabelY, COLOR_TEXT_DIM, false);
+        graphics.text(this.font, label, leftPanelX + 10, cameraSliderLabelY, COLOR_TEXT_DIM, false);
         graphics.fill(cameraSliderX, cameraSliderTrackY, cameraSliderX + cameraSliderWidth, cameraSliderTrackY + 4, TranslucentTrayChrome.LIST_BACKGROUND);
         int thumbX = cameraSliderX + Math.round(((state.cameraHeightOffset() + 2.0f) / 4.0f) * (cameraSliderWidth - 6));
         graphics.fill(thumbX, cameraSliderTrackY - 2, thumbX + 6, cameraSliderTrackY + 6, COLOR_ACCENT);
     }
 
-    private void drawAudioSlider(GuiGraphics graphics) {
+    private void drawAudioSlider(GuiGraphicsExtractor graphics) {
         String label = wb("audio_volume.short") + ": " + Math.round(state.audioVolume() * 100.0f) + "%";
-        graphics.drawString(this.font, label, leftPanelX + 10, audioSliderLabelY, COLOR_TEXT_DIM, false);
+        graphics.text(this.font, label, leftPanelX + 10, audioSliderLabelY, COLOR_TEXT_DIM, false);
         graphics.fill(audioSliderX, audioSliderTrackY, audioSliderX + audioSliderWidth, audioSliderTrackY + 4, TranslucentTrayChrome.LIST_BACKGROUND);
         int filledWidth = Math.round(state.audioVolume() * audioSliderWidth);
         graphics.fill(audioSliderX, audioSliderTrackY, audioSliderX + filledWidth, audioSliderTrackY + 4,
@@ -466,12 +472,12 @@ public class StageSelectScreen extends Screen {
         graphics.fill(thumbX, audioSliderTrackY - 2, thumbX + 6, audioSliderTrackY + 6, COLOR_ACCENT);
     }
 
-    private void drawToggle(GuiGraphics graphics, int x, int y, int width, int height, boolean checked, boolean hovered, String label) {
+    private void drawToggle(GuiGraphicsExtractor graphics, int x, int y, int width, int height, boolean checked, boolean hovered, String label) {
         if (hovered) {
             graphics.fill(x, y, x + width, y + height, 0x12000000);
         }
         int labelY = y + Math.max(0, (height - this.font.lineHeight) / 2);
-        graphics.drawString(this.font, label, x, labelY, COLOR_TEXT, false);
+        graphics.text(this.font, label, x, labelY, COLOR_TEXT, false);
 
         int trackWidth = 28;
         int trackHeight = Math.max(10, height - 2);
@@ -485,7 +491,7 @@ public class StageSelectScreen extends Screen {
         graphics.fill(knobX, knobY, knobX + knobSize, knobY + knobSize, 0xFFF5FAFF);
     }
 
-    private void drawButton(GuiGraphics graphics, int x, int y, int width, int height, String text, boolean hovered, boolean primary, boolean disabled, boolean enabled) {
+    private void drawButton(GuiGraphicsExtractor graphics, int x, int y, int width, int height, String text, boolean hovered, boolean primary, boolean disabled, boolean enabled) {
         int color;
         if (!enabled || disabled) {
             color = COLOR_BUTTON_DISABLED;
@@ -497,27 +503,27 @@ public class StageSelectScreen extends Screen {
             color = hovered ? COLOR_BUTTON_HOVER : COLOR_BUTTON;
         }
         graphics.fill(x, y, x + width, y + height, color);
-        graphics.drawCenteredString(this.font, text, x + width / 2, y + 4, enabled && !disabled ? TranslucentTrayChrome.TITLE_TEXT : COLOR_TEXT_MUTED);
+        graphics.centeredText(this.font, text, x + width / 2, y + 4, enabled && !disabled ? TranslucentTrayChrome.TITLE_TEXT : COLOR_TEXT_MUTED);
     }
 
-    private void drawPanel(GuiGraphics graphics, int x, int y, int width, int height) {
+    private void drawPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         TranslucentTrayChrome.drawPanel(graphics, x, y, width, height);
     }
 
-    private void drawListBackground(GuiGraphics graphics, int x, int y, int width, int height) {
+    private void drawListBackground(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         TranslucentTrayChrome.fillListArea(graphics, x, y, width, height);
     }
 
-    private void drawSectionLabel(GuiGraphics graphics, String text, int x, int y) {
-        graphics.drawString(this.font, text, x, y, COLOR_TEXT_DIM, false);
+    private void drawSectionLabel(GuiGraphicsExtractor graphics, String text, int x, int y) {
+        graphics.text(this.font, text, x, y, COLOR_TEXT_DIM, false);
     }
 
-    private void drawRow(GuiGraphics graphics, int x, int y, int width, boolean selected, boolean hovered) {
+    private void drawRow(GuiGraphicsExtractor graphics, int x, int y, int width, boolean selected, boolean hovered) {
         int bg = selected ? COLOR_ROW_SELECTED : hovered ? COLOR_ROW_HOVER : COLOR_ROW;
         graphics.fill(x, y, x + width, y + LIST_ROW_HEIGHT, bg);
     }
 
-    private void drawScrollbar(GuiGraphics graphics, int x, int top, int bottom, float offset, float maxScroll) {
+    private void drawScrollbar(GuiGraphicsExtractor graphics, int x, int top, int bottom, float offset, float maxScroll) {
         TranslucentTrayChrome.drawScrollbar(graphics, x, top, bottom, offset, maxScroll);
     }
 
@@ -548,7 +554,7 @@ public class StageSelectScreen extends Screen {
             return;
         }
         stageStarted = true;
-        Minecraft.getInstance().setScreen(null);
+        Minecraft.getInstance().gui.setScreen(null);
     }
 
     private void persistPreferences() {
