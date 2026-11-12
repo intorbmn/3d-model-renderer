@@ -5,7 +5,7 @@ import com.shiroha.mmdskin.config.UIConstants;
 import com.shiroha.mmdskin.render.entity.MobReplacementTargets;
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -110,26 +110,29 @@ public class MobReplacementModelPickerScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics guiGraphics) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         updateLayout();
         updateHoverState(mouseX, mouseY);
         updateScrollAnimation();
 
         drawFrame(guiGraphics);
         drawModelList(guiGraphics, mouseX, mouseY);
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (super.mouseClicked(mouseX, mouseY, button)) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (super.mouseClicked(event, doubleClick)) {
             return true;
         }
-        if (button == 0 && hoveredIndex >= 0 && hoveredIndex < filteredModels.size()) {
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && hoveredIndex >= 0 && hoveredIndex < filteredModels.size()) {
             selectedModel = filteredModels.get(hoveredIndex);
             updateChooseButtonState();
             return true;
@@ -138,9 +141,10 @@ public class MobReplacementModelPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
         if (!layout.listBox.contains(mouseX, mouseY)) {
-            return super.mouseScrolled(mouseX, mouseY, delta);
+            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
         targetScroll = Mth.clamp(targetScroll - (float) delta * 12.0f, 0.0f, maxScroll());
         return true;
@@ -149,7 +153,7 @@ public class MobReplacementModelPickerScreen extends Screen {
     @Override
     public void onClose() {
         if (this.minecraft != null) {
-            this.minecraft.setScreen(parent);
+            this.minecraft.gui.setScreen(parent);
         }
     }
 
@@ -203,7 +207,7 @@ public class MobReplacementModelPickerScreen extends Screen {
             return;
         }
         selectionConsumer.accept(selectedModel);
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 
     private void applyDefault() {
@@ -217,29 +221,29 @@ public class MobReplacementModelPickerScreen extends Screen {
         }
     }
 
-    private void drawFrame(GuiGraphics guiGraphics) {
+    private void drawFrame(GuiGraphicsExtractor guiGraphics) {
         TranslucentTrayChrome.drawOverlay(guiGraphics, this.width, this.height);
         TranslucentTrayChrome.drawPanel(guiGraphics, layout.panel.x, layout.panel.y, layout.panel.w, layout.panel.h);
 
-        guiGraphics.drawString(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
-        guiGraphics.drawString(this.font, truncate(target.displayName().getString(), 24), layout.header.x, layout.header.y + 11, TranslucentTrayChrome.SUBTITLE_TEXT, false);
-        guiGraphics.drawString(this.font, buildStatusText(), layout.header.x, layout.header.y + 21, TranslucentTrayChrome.DETAIL_TEXT, false);
+        guiGraphics.text(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
+        guiGraphics.text(this.font, truncate(target.displayName().getString(), 24), layout.header.x, layout.header.y + 11, TranslucentTrayChrome.SUBTITLE_TEXT, false);
+        guiGraphics.text(this.font, buildStatusText(), layout.header.x, layout.header.y + 21, TranslucentTrayChrome.DETAIL_TEXT, false);
         drawSearchBoxBackplate(guiGraphics);
     }
 
-    private void drawSearchBoxBackplate(GuiGraphics guiGraphics) {
+    private void drawSearchBoxBackplate(GuiGraphicsExtractor guiGraphics) {
         boolean focused = searchBox != null && searchBox.isFocused();
         int fill = focused ? 0x30FFFFFF : TranslucentTrayChrome.LIST_BACKGROUND;
         guiGraphics.fill(layout.searchBox.x, layout.searchBox.y,
             layout.searchBox.x + layout.searchBox.w, layout.searchBox.y + layout.searchBox.h, fill);
     }
 
-    private void drawModelList(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    private void drawModelList(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
         hoveredIndex = -1;
         UiRect list = layout.listBox;
         TranslucentTrayChrome.fillListArea(guiGraphics, list.x, list.y, list.w, list.h);
         if (filteredModels.isEmpty()) {
-            guiGraphics.drawCenteredString(this.font, "-", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.DIM_TEXT);
+            guiGraphics.centeredText(this.font, "-", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.DIM_TEXT);
             return;
         }
 
@@ -262,7 +266,7 @@ public class MobReplacementModelPickerScreen extends Screen {
 
             guiGraphics.fill(rowX, rowY, rowX + rowWidth, rowY + CARD_HEIGHT,
                 TranslucentTrayChrome.cardBackground(selected, hovered));
-            guiGraphics.drawString(this.font, truncate(modelName, 24), rowX + 3, rowY + 4, TranslucentTrayChrome.BODY_TEXT, false);
+            guiGraphics.text(this.font, truncate(modelName, 24), rowX + 3, rowY + 4, TranslucentTrayChrome.BODY_TEXT, false);
         }
         guiGraphics.disableScissor();
         TranslucentTrayChrome.drawScrollbar(guiGraphics, list.x + list.w - 3, list.y, list.y + list.h, animatedScroll, maxScroll());
@@ -421,12 +425,12 @@ public class MobReplacementModelPickerScreen extends Screen {
         }
 
         @Override
-        public void onPress() {
+        public void onPress(net.minecraft.client.input.InputWithModifiers input) {
             onPressAction.run();
         }
 
         @Override
-        protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        protected void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
             TranslucentTrayChrome.drawButton(
                 guiGraphics,
                 Minecraft.getInstance().font,
