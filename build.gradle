@@ -1,93 +1,57 @@
-// 根项目配置 - 多模块项目
 plugins {
-	id 'architectury-plugin' version '3.4.162'
-	id 'dev.architectury.loom' version '1.7.435' apply false
+    id "architectury-plugin" version "3.5.169"
+    id "dev.architectury.loom-no-remap" version "1.17-SNAPSHOT" apply false
 }
 
 architectury {
-	minecraft = '1.20.1'
+    minecraft = "26.3"
 }
 
 allprojects {
-	apply plugin: 'java'
-	apply plugin: 'architectury-plugin'
-	
-	group = maven_group
-	version = '1.0.5-1.20.1'
-	
-			repositories {
-			maven { url = 'https://maven.architectury.dev/' }
-			maven { url = 'https://maven.fabricmc.net/' }
-			maven { url = 'https://maven.minecraftforge.net/' }
-			maven { url = 'https://maven.shedaniel.me/' }
-			maven { url = 'https://maven.terraformersmc.com/' }
-			maven { url = 'https://redirector.kotlinlang.org/maven/compose-dev' }
-			// Cardinal Components API (Touhou Little Maid Fabric 移植版依赖)
-			maven { url = 'https://maven.ladysnake.org/releases' }
-        // curseforge与modrinth平台仓库
-        exclusiveContent {
-            forRepository {
-                maven {
-                    name = 'CurseMaven'
-                    url = 'https://cursemaven.com'
-                }
-            }
-            filter {
-                includeGroup 'curse.maven'
-            }
+    apply plugin: "java"
+    apply plugin: "architectury-plugin"
+
+    group = maven_group
+    version = "1.0.5-26.3"
+
+    repositories {
+        maven { url = "https://maven.architectury.dev/" }
+        maven { url = "https://maven.fabricmc.net/" }
+        maven { url = "https://maven.shedaniel.me/" }
+        maven { url = "https://maven.terraformersmc.com/" }
+        maven { url = "https://maven.ladysnake.org/releases" }
+        maven { url = "https://api.modrinth.com/maven" }
+        mavenCentral()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 25
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
         }
-        exclusiveContent {
-            forRepository {
-                maven {
-                    name = 'Modrinth'
-                    url = 'https://api.modrinth.com/maven'
-                }
-            }
-            filter {
-                includeGroup 'maven.modrinth'
-            }
+        withSourcesJar()
+    }
+
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(25)
         }
-		mavenCentral()
-	}
-	
-	tasks.withType(JavaCompile).configureEach {
-		options.encoding = 'UTF-8'
-		options.release = 17
-	}
-	
-	java {
-		toolchain {
-			languageVersion = JavaLanguageVersion.of(17)
-		}
-		withSourcesJar()
-	}
-	
-	// 关键：Gradle toolchain 默认只影响编译任务；runClient/Transformer 属于 JavaExec，
-	// 若系统默认 JDK 为 21 可能触发 Architectury Transformer 的已知崩溃。
-	// 这里强制所有 JavaExec 使用 Java 17 launcher，保证开发运行环境一致。
-	tasks.withType(JavaExec).configureEach {
-		javaLauncher = javaToolchains.launcherFor {
-			languageVersion = JavaLanguageVersion.of(17)
-		}
-		// 设置运行游戏时的玩家名称
-		systemProperty 'minecraft.username', rootProject.properties.getOrDefault('minecraft_username', 'Player')
-	}
+        systemProperty "minecraft.username", rootProject.properties.getOrDefault("minecraft_username", "Player")
+    }
 }
 
 subprojects {
-	apply plugin: 'dev.architectury.loom'
-	
-	base {
-		archivesName = "mmdskin-${project.name}"
-	}
-	
-	loom {
-		silentMojangMappingsLicense()
-	}
-	
-	dependencies {
-		minecraft "com.mojang:minecraft:1.20.1"
-		mappings loom.officialMojangMappings()
-	}
-	
+    apply plugin: "dev.architectury.loom-no-remap"
+
+    base {
+        archivesName = "mmdskin-${project.name}"
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    }
 }
