@@ -3,8 +3,12 @@ name: MPR Baseline CI
 on:
   push:
     branches:
-      - "**"
+      - "ci/rebuild-baseline"
+      - "1.20-vr"
   pull_request:
+    branches:
+      - ci/rebuild-baseline
+      - 1.20-vr
   workflow_dispatch:
 
 permissions:
