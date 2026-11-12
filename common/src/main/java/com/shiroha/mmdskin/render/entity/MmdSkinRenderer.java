@@ -76,7 +76,7 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
     private void renderInInventory(T entityIn, ManagedModel model, float entityYaw,
                                     float tickDelta, PoseStack matrixStack, int packedLight, float[] size) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen == null) return;
+        if (mc.gui.screen() == null) return;
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         PoseStack modelViewStack = RenderSystem.getModelViewStack();
