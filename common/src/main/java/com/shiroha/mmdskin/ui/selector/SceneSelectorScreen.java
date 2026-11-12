@@ -86,7 +86,7 @@ public class SceneSelectorScreen extends Screen {
             return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         if (layout.doneButton.contains(mouseX, mouseY)) {
@@ -108,7 +108,6 @@ public class SceneSelectorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        double delta = scrollY;
         double delta = scrollY;
         if (!layout.listBox.contains(mouseX, mouseY)) {
             return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
