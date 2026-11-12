@@ -212,7 +212,7 @@ public class MobReplacementModelPickerScreen extends Screen {
 
     private void applyDefault() {
         selectionConsumer.accept(UIConstants.DEFAULT_MODEL_NAME);
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 
     private void updateChooseButtonState() {
