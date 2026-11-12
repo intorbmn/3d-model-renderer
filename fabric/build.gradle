@@ -78,8 +78,9 @@ repositories {
 }
 
 dependencies {
-	implementation project(":common")
-	common(project(path: ":common", configuration: "namedElements")) { transitive = false }
+	// Loom 1.17 no-remap không còn variant namedElements.
+	// Dùng project dependency trực tiếp cho compile/runtime classpath.
+	common(project(":common")) { transitive = false }
 	shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive = false }
 	
 	// JLayer 运行时由平台包私有化，避免与其他模组的 JPMS 模块导出冲突。
@@ -111,20 +112,13 @@ dependencies {
 	// Modrinth Maven 不提供传递依赖，需要手动添加
 	// Cardinal Components is only needed by the deferred Maid compatibility layer.
 	
-	
-	
-	
 	// Reach Entity Attributes - Touhou Little Maid 的传递依赖
-	
 	
 	// Nashorn 脚本引擎 - Java 17 不再内置，Touhou Little Maid JS 动画需要
 	runtimeOnly "org.openjdk.nashorn:nashorn-core:15.4"
 	
 	// TouhouLittleMaid Orihime (Fabric 移植版) - 可选依赖，用于联动
 	// Touhou Little Maid compatibility is deferred for the first 26.3 milestone.
-	
-	
-	
 }
 
 processResources {
