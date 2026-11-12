@@ -20,6 +20,8 @@ allprojects {
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
         options.release = 25
+        // javac stops at 100 errors by default; list everything so the port can be enumerated.
+        options.compilerArgs.addAll(["-Xmaxerrs", "100000", "-Xmaxwarns", "100000"])
     }
 
     java {

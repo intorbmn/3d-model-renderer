@@ -36,6 +36,19 @@ jobs:
       - name: Compile Java modules without building Rust
         run: ./gradlew :common:compileJava :fabric:compileJava --no-daemon -x prepareNativeResources -x buildRustNative --stacktrace
 
+      - name: Inspect Minecraft 26.3 API (diagnostic)
+        if: always()
+        run: |
+          set +e
+          echo "== candidate Minecraft jars"
+          find ~/.gradle -type f -name '*.jar' -path '*minecraft*' ! -name '*sources*' -size +5M 2>/dev/null | head -5
+          for jar in $(find ~/.gradle -type f -name '*.jar' -path '*minecraft*' ! -name '*sources*' -size +5M 2>/dev/null | head -3); do
+            echo "== $jar"
+            unzip -Z1 "$jar" | grep -E '^(com/mojang/blaze3d/(vertex|platform|systems|pipeline|buffers)/[A-Za-z]+\.class|net/minecraft/client/gui/[A-Za-z]+\.class|net/minecraft/client/renderer/[A-Za-z]+\.class|net/minecraft/client/(player|input)/[A-Za-z]+\.class)$' | sed 's/\.class$//' | sort
+          done
+          echo "== lwjgl / sdl jars"
+          find ~/.gradle -type f \( -name 'lwjgl*.jar' -o -name '*sdl*.jar' \) ! -name '*sources*' 2>/dev/null | sed 's#.*/##' | sort -u | head -60
+
       - name: Upload compile reports
         if: always()
         uses: actions/upload-artifact@v4
