@@ -1,7 +1,7 @@
 package com.shiroha.mmdskin.ui.wheel;
 
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.input.KeyEvent;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -11,7 +11,7 @@ import net.minecraft.util.Mth;
 
 import java.util.List;
 
-/** 轮盘界面基类，负责原生 GuiGraphics 轮盘渲染与交互动画。 */
+/** 轮盘界面基类，负责原生 GuiGraphicsExtractor 轮盘渲染与交互动画。 */
 public abstract class AbstractWheelScreen extends Screen {
 
     public record WheelStyle(
@@ -99,7 +99,7 @@ public abstract class AbstractWheelScreen extends Screen {
         selectedSlot = (int) (angle / segmentAngle) % count;
     }
 
-    protected void renderWheelBase(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, List<WheelEntry> entries) {
+    protected void renderWheelBase(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, List<WheelEntry> entries) {
         updateSelectedSlot(mouseX, mouseY);
         updateAnimations(entries.size());
         renderBackdrop(guiGraphics);
@@ -109,7 +109,7 @@ public abstract class AbstractWheelScreen extends Screen {
         renderCenterDecor(guiGraphics);
     }
 
-    protected void renderCenterBubble(GuiGraphics guiGraphics, String text, int textColor) {
+    protected void renderCenterBubble(GuiGraphicsExtractor guiGraphics, String text, int textColor) {
         float bubbleScale = 0.98f + centerPop * 0.06f;
         int bubbleRadius = Math.max(30, Math.round(innerRadius * CENTER_BUBBLE_SCALE * bubbleScale));
         fillCircle(guiGraphics, centerX, centerY, bubbleRadius + 2, withAlpha(style.centerBorder(), 72));
@@ -121,7 +121,7 @@ public abstract class AbstractWheelScreen extends Screen {
         guiGraphics.text(this.font, display, centerX - textWidth / 2, centerY - 5, textColor, false);
     }
 
-    protected void renderEmptyState(GuiGraphics guiGraphics, Component hint) {
+    protected void renderEmptyState(GuiGraphicsExtractor guiGraphics, Component hint) {
         int width = Math.max(180, this.font.width(hint) + 48);
         int height = 36;
         int x = centerX - width / 2;
@@ -137,14 +137,14 @@ public abstract class AbstractWheelScreen extends Screen {
                 .build();
     }
 
-    private void renderBackdrop(GuiGraphics guiGraphics) {
+    private void renderBackdrop(GuiGraphicsExtractor guiGraphics) {
         if (this.minecraft == null || this.minecraft.level == null) {
             guiGraphics.fill(0, 0, this.width, this.height, 0xFF101318);
         }
         guiGraphics.fill(0, 0, this.width, this.height, BACKDROP_DIM);
     }
 
-    private void renderSegmentWheel(GuiGraphics guiGraphics, List<WheelEntry> entries) {
+    private void renderSegmentWheel(GuiGraphicsExtractor guiGraphics, List<WheelEntry> entries) {
         int count = entries.size();
         float segmentAngle = 360.0f / count;
         int ringInner = innerRadius;
@@ -189,13 +189,13 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void renderCenterDecor(GuiGraphics guiGraphics) {
+    private void renderCenterDecor(GuiGraphicsExtractor guiGraphics) {
         int haloRadius = Math.max(18, Math.round(innerRadius * 0.86f + openProgress * 4.0f));
         drawCircleOutline(guiGraphics, centerX, centerY, haloRadius, withAlpha(style.lineColorDim(), 42));
         drawCircleOutline(guiGraphics, centerX, centerY, Math.max(12, haloRadius - 6), withAlpha(0xFFFFFF, 10));
     }
 
-    private void renderSingleEntry(GuiGraphics guiGraphics, String text, int centerTextX, int centerTextY, float pop, int maxWidth) {
+    private void renderSingleEntry(GuiGraphicsExtractor guiGraphics, String text, int centerTextX, int centerTextY, float pop, int maxWidth) {
         String display = fitText(text, Math.max(62, maxWidth));
         int width = this.font.width(display);
         int color = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.36f + pop * 0.64f);
@@ -203,7 +203,7 @@ public abstract class AbstractWheelScreen extends Screen {
         guiGraphics.text(this.font, display, centerTextX - width / 2, centerTextY - 5, color, false);
     }
 
-    private void renderDualEntry(GuiGraphics guiGraphics, String icon, String label, int centerTextX, int centerTextY, float pop, int maxWidth) {
+    private void renderDualEntry(GuiGraphicsExtractor guiGraphics, String icon, String label, int centerTextX, int centerTextY, float pop, int maxWidth) {
         String displayIcon = icon == null ? "" : icon;
         int iconWidth = this.font.width(displayIcon);
         int iconColor = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.42f + pop * 0.58f);
@@ -281,7 +281,7 @@ public abstract class AbstractWheelScreen extends Screen {
         return (Mth.clamp(alpha, 0, 255) << 24) | (color & 0x00FFFFFF);
     }
 
-    private void fillRoundedRect(GuiGraphics guiGraphics, int x, int y, int width, int height, int radius, int color) {
+    private void fillRoundedRect(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height, int radius, int color) {
         int clampedRadius = Math.min(radius, Math.min(width, height) / 2);
         for (int row = 0; row < height; row++) {
             int inset = row < clampedRadius
@@ -293,7 +293,7 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void fillCircle(GuiGraphics guiGraphics, int cx, int cy, int radius, int color) {
+    private void fillCircle(GuiGraphicsExtractor guiGraphics, int cx, int cy, int radius, int color) {
         if (radius <= 0) {
             return;
         }
@@ -303,7 +303,7 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void drawCircleOutline(GuiGraphics guiGraphics, int cx, int cy, int radius, int color) {
+    private void drawCircleOutline(GuiGraphicsExtractor guiGraphics, int cx, int cy, int radius, int color) {
         if (radius <= 1) {
             return;
         }
@@ -316,11 +316,11 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void drawCircleArcOutline(GuiGraphics guiGraphics, float cx, float cy, float radius, int color, float width) {
+    private void drawCircleArcOutline(GuiGraphicsExtractor guiGraphics, float cx, float cy, float radius, int color, float width) {
         drawRing(guiGraphics, cx, cy, Math.max(0.0f, radius - width), radius, 0.0f, 360.0f, color);
     }
 
-    private void drawSeparator(GuiGraphicsExtractor graphics, float cx, float cy,
+    private void drawSeparator(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
                                 float inner, float outer, float angleDeg, int color) {
         float radians = (float) Math.toRadians(angleDeg);
         float x1 = cx + Mth.cos(radians) * inner;
@@ -336,12 +336,12 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void drawAnnularSegment(GuiGraphicsExtractor graphics, float cx, float cy,
+    private void drawAnnularSegment(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
                                     float inner, float outer, float startDeg, float sweepDeg, int color) {
         drawRing(graphics, cx, cy, inner, outer, startDeg, sweepDeg, color);
     }
 
-    private void drawAnnularSegmentOutline(GuiGraphicsExtractor graphics, float cx, float cy,
+    private void drawAnnularSegmentOutline(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
                                            float inner, float outer, float startDeg, float sweepDeg,
                                            int color, float width) {
         drawRing(graphics, cx, cy, outer - width, outer, startDeg, sweepDeg, color);
@@ -354,7 +354,7 @@ public abstract class AbstractWheelScreen extends Screen {
      * Rasterizes an annular sector through the GUI extractor. 26.3 no longer
      * exposes the immediate-mode vertex uploader used by the old wheel renderer.
      */
-    private void drawRing(GuiGraphicsExtractor graphics, float cx, float cy,
+    private void drawRing(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
                           float inner, float outer, float startDeg, float sweepDeg, int color) {
         int minX = (int) Math.floor(cx - outer);
         int maxX = (int) Math.ceil(cx + outer);
