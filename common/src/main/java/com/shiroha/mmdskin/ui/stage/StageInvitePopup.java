@@ -2,7 +2,7 @@ package com.shiroha.mmdskin.ui.stage;
 
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -58,7 +58,7 @@ public class StageInvitePopup extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
 
         if (!facade.hasPendingInvite()) {
             this.onClose();
@@ -69,11 +69,11 @@ public class StageInvitePopup extends Screen {
         TranslucentTrayChrome.drawPanel(g, px, py, POPUP_W, POPUP_H);
         TranslucentTrayChrome.drawSeparator(g, px + MARGIN, py + 18, POPUP_W - MARGIN * 2);
 
-        g.drawCenteredString(this.font, this.title, px + POPUP_W / 2, py + MARGIN - 1, TranslucentTrayChrome.TITLE_TEXT);
+        g.centeredText(this.font, this.title, px + POPUP_W / 2, py + MARGIN - 1, TranslucentTrayChrome.TITLE_TEXT);
 
         Component msg = Component.translatable("message.mmdskin.stage.invite_received", inviterName);
-        g.drawCenteredString(this.font, msg, px + POPUP_W / 2, py + 26, TranslucentTrayChrome.BODY_TEXT);
-        g.drawCenteredString(this.font,
+        g.centeredText(this.font, msg, px + POPUP_W / 2, py + 26, TranslucentTrayChrome.BODY_TEXT);
+        g.centeredText(this.font,
                 Component.translatable("gui.mmdskin.stage.invite_prompt"),
                 px + POPUP_W / 2,
                 py + 38,
@@ -85,16 +85,16 @@ public class StageInvitePopup extends Screen {
                     && mouseY >= btnY && mouseY <= btnY + BTN_H;
 
         g.fill(acceptX, btnY, acceptX + BTN_W, btnY + BTN_H, hoverAccept ? BTN_ACCEPT_HOVER : BTN_ACCEPT);
-        g.drawCenteredString(this.font,
+        g.centeredText(this.font,
             Component.translatable("gui.mmdskin.stage.accept"),
             acceptX + BTN_W / 2, btnY + 4, TranslucentTrayChrome.TITLE_TEXT);
 
         g.fill(declineX, btnY, declineX + BTN_W, btnY + BTN_H, hoverDecline ? BTN_DECLINE_HOVER : BTN_DECLINE);
-        g.drawCenteredString(this.font,
+        g.centeredText(this.font,
             Component.translatable("gui.mmdskin.stage.decline"),
             declineX + BTN_W / 2, btnY + 4, TranslucentTrayChrome.TITLE_TEXT);
 
-        super.render(g, mouseX, mouseY, partialTick);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
     }
 
     @Override
