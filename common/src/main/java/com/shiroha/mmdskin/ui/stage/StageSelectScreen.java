@@ -160,7 +160,7 @@ public class StageSelectScreen extends Screen {
             return true;
         }
         if (!containsLeftPanel(mouseX, mouseY)) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
         if (hoveredRefresh) {
             reloadStagePacks();
@@ -248,7 +248,6 @@ public class StageSelectScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        double delta = scrollY;
         double delta = scrollY;
         if (assignPanel != null && assignPanel.mouseScrolled(mouseX, mouseY, delta)) {
             return true;
