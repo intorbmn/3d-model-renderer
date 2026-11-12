@@ -33,7 +33,7 @@ Sources:
 2. The root project pins Minecraft 1.20.1 and official Mojang mappings.
 3. The project is still multi-loader: `common`, `fabric`, and `forge`.
 4. `common/build.gradle` uses the Architectury `common("fabric", "forge")` setup and a generated native-resource task.
-5. The Fabric module still uses Architectury's `platformSetupLoomIde()` and `fabric()` DSL.
+5. The Fabric module uses Architectury's `platformSetupLoomIde()` and `fabric()` DSL, so a compatible Architectury Loom release is the lowest-risk path.
 6. Fabric mixin config currently declares `JAVA_17`.
 7. `fabric.mod.json` currently declares Minecraft `~1.20.1` and Java `>=17`.
 8. The player renderer and world renderer rely on method-descriptor Mixin injections into vanilla rendering code. These are high-risk port points for 26.3.
@@ -45,8 +45,8 @@ Sources:
 
 - Keep the stable 1.20.1 branch untouched.
 - Stop treating Forge as part of the 26.3 deliverable for the first port milestone.
-- Replace the legacy Architectury Loom build path with the official 26.3 Fabric Loom path.
-- Preserve common Java sources and Rust native build/resource staging, but wire them into a Fabric-only build without duplicate resource copying.
+- Upgrade to the Minecraft 26.3-compatible Architectury Plugin 3.5.x and Architectury Loom no-remap 1.17+ path. This retains the shared `common` module and Architectury API while targeting Fabric only in the first milestone.
+- Preserve common Java sources and Rust native build/resource staging, include only `common` and `fabric` in Gradle settings, and keep Forge source files untouched but excluded from this build.
 - First milestone: Gradle configures and resolves the 26.3 Minecraft/Fabric dependencies.
 
 ### Phase B: compile and repair Java API usage
@@ -91,3 +91,13 @@ Fabric's official 26.3 announcement highlights a major focus on rendering change
 - Minecraft 26.3 and Fabric dependencies resolve.
 - Rust native library builds and is staged exactly once.
 - Java compile errors are enumerated and grouped; no claim of runtime compatibility until the client launches.
+
+
+## Current implementation status (2026-11-13)
+
+- The port branch now uses Java 25, Gradle 9.8.2, Minecraft 26.3, Fabric Loader 0.20.1, Fabric API 0.166.0+26.3, Architectury Plugin 3.5.169, Architectury Loom no-remap 1.17-SNAPSHOT, and Architectury API 22.0.5.
+- Gradle settings include only `common` and `fabric`; the Forge source module remains in the repository but is not part of this build.
+- Fabric metadata has been moved to Minecraft 26.3 / Java 25.
+- The optional Touhou Little Maid mixin and its legacy dependency set are deferred from this first compile milestone. The related source file is excluded, not deleted.
+- A dedicated GitHub Actions workflow `.github/workflows/ci-fabric-26-3.yml` builds `:fabric:build` with Java 25 and recursively checked-out Rust submodules.
+- This is build-infrastructure work only. No successful 26.3 build or runtime compatibility is claimed until the new workflow passes.
