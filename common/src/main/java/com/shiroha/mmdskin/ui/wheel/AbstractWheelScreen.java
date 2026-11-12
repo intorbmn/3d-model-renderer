@@ -1,20 +1,13 @@
 package com.shiroha.mmdskin.ui.wheel;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.KeyEvent;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import org.joml.Matrix4f;
 
 import java.util.List;
 
@@ -327,81 +320,73 @@ public abstract class AbstractWheelScreen extends Screen {
         drawRing(guiGraphics, cx, cy, Math.max(0.0f, radius - width), radius, 0.0f, 360.0f, color);
     }
 
-    private void drawSeparator(GuiGraphics guiGraphics, float cx, float cy, float inner, float outer, float angleDeg, int color) {
+    private void drawSeparator(GuiGraphicsExtractor graphics, float cx, float cy,
+                                float inner, float outer, float angleDeg, int color) {
         float radians = (float) Math.toRadians(angleDeg);
-        float dx = Mth.cos(radians);
-        float dy = Mth.sin(radians);
-        float nx = -dy * 0.9f;
-        float ny = dx * 0.9f;
-        drawQuad(guiGraphics,
-                cx + dx * inner - nx, cy + dy * inner - ny,
-                cx + dx * inner + nx, cy + dy * inner + ny,
-                cx + dx * outer + nx, cy + dy * outer + ny,
-                cx + dx * outer - nx, cy + dy * outer - ny,
-                color);
+        float x1 = cx + Mth.cos(radians) * inner;
+        float y1 = cy + Mth.sin(radians) * inner;
+        float x2 = cx + Mth.cos(radians) * outer;
+        float y2 = cy + Mth.sin(radians) * outer;
+        int steps = Math.max(1, (int) Math.ceil(Math.hypot(x2 - x1, y2 - y1)));
+        for (int i = 0; i <= steps; i++) {
+            float t = i / (float) steps;
+            int x = Math.round(Mth.lerp(t, x1, x2));
+            int y = Math.round(Mth.lerp(t, y1, y2));
+            graphics.fill(x - 1, y - 1, x + 2, y + 2, color);
+        }
     }
 
-    private void drawAnnularSegment(GuiGraphics guiGraphics, float cx, float cy,
+    private void drawAnnularSegment(GuiGraphicsExtractor graphics, float cx, float cy,
                                     float inner, float outer, float startDeg, float sweepDeg, int color) {
-        drawRing(guiGraphics, cx, cy, inner, outer, startDeg, sweepDeg, color);
+        drawRing(graphics, cx, cy, inner, outer, startDeg, sweepDeg, color);
     }
 
-    private void drawAnnularSegmentOutline(GuiGraphics guiGraphics, float cx, float cy,
+    private void drawAnnularSegmentOutline(GuiGraphicsExtractor graphics, float cx, float cy,
                                            float inner, float outer, float startDeg, float sweepDeg,
                                            int color, float width) {
-        drawRing(guiGraphics, cx, cy, outer - width, outer, startDeg, sweepDeg, color);
-        drawRing(guiGraphics, cx, cy, inner, inner + width, startDeg, sweepDeg, color);
-        drawSeparator(guiGraphics, cx, cy, inner, outer, startDeg, color);
-        drawSeparator(guiGraphics, cx, cy, inner, outer, startDeg + sweepDeg, color);
+        drawRing(graphics, cx, cy, outer - width, outer, startDeg, sweepDeg, color);
+        drawRing(graphics, cx, cy, inner, inner + width, startDeg, sweepDeg, color);
+        drawSeparator(graphics, cx, cy, inner, outer, startDeg, color);
+        drawSeparator(graphics, cx, cy, inner, outer, startDeg + sweepDeg, color);
     }
 
-    private void drawRing(GuiGraphics guiGraphics, float cx, float cy,
+    /**
+     * Rasterizes an annular sector through the GUI extractor. 26.3 no longer
+     * exposes the immediate-mode vertex uploader used by the old wheel renderer.
+     */
+    private void drawRing(GuiGraphicsExtractor graphics, float cx, float cy,
                           float inner, float outer, float startDeg, float sweepDeg, int color) {
-        int segments = Math.max(12, Math.round(Math.abs(sweepDeg) / 5.5f));
-        float startRad = (float) Math.toRadians(startDeg);
-        float stepRad = (float) Math.toRadians(sweepDeg / segments);
+        int minX = (int) Math.floor(cx - outer);
+        int maxX = (int) Math.ceil(cx + outer);
+        int minY = (int) Math.floor(cy - outer);
+        int maxY = (int) Math.ceil(cy + outer);
+        float innerSq = inner * inner;
+        float outerSq = outer * outer;
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        PoseStack.Pose pose = guiGraphics.pose().last();
-        Matrix4f matrix = pose.pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-        for (int i = 0; i <= segments; i++) {
-            float angle = startRad + stepRad * i;
-            float cos = Mth.cos(angle);
-            float sin = Mth.sin(angle);
-            addVertex(builder, matrix, cx + cos * outer, cy + sin * outer, color);
-            addVertex(builder, matrix, cx + cos * inner, cy + sin * inner, color);
+        for (int y = minY; y <= maxY; y++) {
+            int runStart = -1;
+            float dy = y + 0.5f - cy;
+            for (int x = minX; x <= maxX; x++) {
+                float dx = x + 0.5f - cx;
+                float distanceSq = dx * dx + dy * dy;
+                boolean inside = distanceSq >= innerSq && distanceSq <= outerSq;
+                if (inside && sweepDeg < 359.9f) {
+                    float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
+                    float relative = (angle - startDeg + 360.0f) % 360.0f;
+                    inside = relative <= sweepDeg;
+                }
+
+                if (inside && runStart < 0) {
+                    runStart = x;
+                } else if (!inside && runStart >= 0) {
+                    graphics.fill(runStart, y, x, y + 1, color);
+                    runStart = -1;
+                }
+            }
+            if (runStart >= 0) {
+                graphics.fill(runStart, y, maxX + 1, y + 1, color);
+            }
         }
-        BufferUploader.drawWithShader(builder.end());
-    }
-
-    private void drawQuad(GuiGraphics guiGraphics,
-                          float ax, float ay,
-                          float bx, float by,
-                          float cx, float cy,
-                          float dx, float dy,
-                          int color) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        PoseStack.Pose pose = guiGraphics.pose().last();
-        Matrix4f matrix = pose.pose();
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        addVertex(builder, matrix, ax, ay, color);
-        addVertex(builder, matrix, bx, by, color);
-        addVertex(builder, matrix, cx, cy, color);
-        addVertex(builder, matrix, dx, dy, color);
-        BufferUploader.drawWithShader(builder.end());
-    }
-
-    private void addVertex(BufferBuilder builder, Matrix4f matrix, float x, float y, int color) {
-        builder.vertex(matrix, x, y, 0.0f)
-                .color(red(color), green(color), blue(color), alpha(color))
-                .endVertex();
     }
 
     private int roundedInset(int radius, int row) {
@@ -435,11 +420,11 @@ public abstract class AbstractWheelScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
+    public boolean keyPressed(KeyEvent event) {
+        if (event.key() == InputConstants.KEY_ESCAPE) {
             this.onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 }
