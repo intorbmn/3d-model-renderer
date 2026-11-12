@@ -59,9 +59,12 @@ public class MorphWheelConfigScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) {
-            return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button != com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT) {
+            return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
             return super.mouseClicked(mouseX, mouseY, button);
@@ -103,6 +106,7 @@ public class MorphWheelConfigScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         double delta = scrollY;
+        double delta = scrollY;
         if (layout.availableList.contains(mouseX, mouseY)) {
             availableTargetScroll = clampScroll(availableTargetScroll - (float) delta * 16.0f, maxAvailableScroll());
             return true;
@@ -115,12 +119,15 @@ public class MorphWheelConfigScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.keycode();
+        int modifiers = event.modifiers();
+        if (keyCode == com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE) {
             this.onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
