@@ -40,7 +40,7 @@ public class StageInvitePopup extends Screen {
         var host = mc.level.getPlayerByUUID(hostUUID);
         String name = host != null ? host.getName().getString() : hostUUID.toString().substring(0, 8);
 
-        Runnable openPopup = () -> mc.setScreen(new StageInvitePopup(name));
+        Runnable openPopup = () -> mc.gui.setScreen(new StageInvitePopup(name));
         if (mc.isSameThread()) {
             openPopup.run();
         } else {
