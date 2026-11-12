@@ -27,12 +27,11 @@
 	},
 	"mixins": [
 		"mmdskin-fabric.mixins.json",
-		"mmdskin-maid.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.15.0",
-		"minecraft": "~1.20.1",
-		"java": ">=17",
+		"fabricloader": ">=0.20.1",
+		"minecraft": "26.3",
+		"java": ">=25",
 		"fabric-api": "*",
 		"cloth-config": "*"
 	}
