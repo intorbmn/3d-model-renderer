@@ -1,10 +1,10 @@
-/* 职责：以原生 GuiGraphics 渲染模型选择界面。 */
+/* 职责：以原生 GuiGraphicsExtractor 渲染模型选择界面。 */
 package com.shiroha.mmdskin.ui.selector;
 
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import com.shiroha.mmdskin.ui.selector.application.ModelSelectionApplicationService;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -62,7 +62,7 @@ public class ModelSelectorScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         try {
             updateLayout();
@@ -111,9 +111,10 @@ public class ModelSelectorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
         if (!layout.listBox.contains(mouseX, mouseY)) {
-            return super.mouseScrolled(mouseX, mouseY, delta);
+            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
         float step = 12.0f;
         targetScroll -= (float) delta * step;
@@ -218,15 +219,15 @@ public class ModelSelectorScreen extends Screen {
         return Math.max(0.0f, contentHeight - layout.listBox.h);
     }
 
-    private void renderFallback(GuiGraphics guiGraphics) {
+    private void renderFallback(GuiGraphicsExtractor guiGraphics) {
         TranslucentTrayChrome.drawOverlay(guiGraphics, this.width, this.height);
         TranslucentTrayChrome.drawPanel(guiGraphics, layout.panel.x, layout.panel.y, layout.panel.w, layout.panel.h);
 
-        guiGraphics.drawString(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
+        guiGraphics.text(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
         String stats = Component.translatable("gui.mmdskin.model_selector.stats",
                 Math.max(0, modelCards.size() - 1),
                 shorten(currentModel, 8)).getString();
-        guiGraphics.drawString(this.font, stats, layout.header.x, layout.header.y + 10, TranslucentTrayChrome.SUBTITLE_TEXT, false);
+        guiGraphics.text(this.font, stats, layout.header.x, layout.header.y + 10, TranslucentTrayChrome.SUBTITLE_TEXT, false);
         drawFallbackButton(guiGraphics, layout.doneButton, Component.translatable("gui.done").getString(), hoveredButton == ButtonTarget.DONE, true);
         drawFallbackButton(guiGraphics, layout.refreshButton, Component.translatable("gui.mmdskin.refresh").getString(), hoveredButton == ButtonTarget.REFRESH, true);
         ModelSelectionApplicationService.ModelCard selectedCard = getSelectedCard();
@@ -236,7 +237,7 @@ public class ModelSelectorScreen extends Screen {
         UiRect list = layout.listBox;
         TranslucentTrayChrome.fillListArea(guiGraphics, list.x, list.y, list.w, list.h);
         if (modelCards.isEmpty()) {
-            guiGraphics.drawCenteredString(this.font, "No models", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.BODY_TEXT);
+            guiGraphics.centeredText(this.font, "No models", list.centerX(), list.centerY() - 4, TranslucentTrayChrome.BODY_TEXT);
             return;
         }
 
@@ -254,12 +255,12 @@ public class ModelSelectorScreen extends Screen {
             boolean hovered = i == hoveredCard;
             int bg = TranslucentTrayChrome.cardBackground(selected, hovered);
             guiGraphics.fill(list.x + 4, y, list.x + list.w - 4, y + CARD_HEIGHT, bg);
-            guiGraphics.drawString(this.font, buildCardLabel(card), list.x + 7, y + 3, TranslucentTrayChrome.BODY_TEXT, false);
+            guiGraphics.text(this.font, buildCardLabel(card), list.x + 7, y + 3, TranslucentTrayChrome.BODY_TEXT, false);
             y += CARD_HEIGHT + CARD_GAP;
         }
     }
 
-    private void drawFallbackButton(GuiGraphics guiGraphics, UiRect rect, String text, boolean hovered, boolean enabled) {
+    private void drawFallbackButton(GuiGraphicsExtractor guiGraphics, UiRect rect, String text, boolean hovered, boolean enabled) {
         TranslucentTrayChrome.drawButton(guiGraphics, this.font, rect.x, rect.y, rect.w, rect.h, text, hovered, enabled);
     }
 
@@ -291,24 +292,24 @@ public class ModelSelectorScreen extends Screen {
     }
 
     private void flushPendingActions(Minecraft minecraft) {
-        if (pendingSettingsModel != null && minecraft.screen == this) {
+        if (pendingSettingsModel != null && minecraft.gui.screen() == this) {
             String modelName = pendingSettingsModel;
             pendingSettingsModel = null;
-            minecraft.setScreen(new ModelSettingsScreen(modelName, this));
+            minecraft.gui.setScreen(new ModelSettingsScreen(modelName, this));
             return;
         }
 
-        if (pendingClose && minecraft.screen == this) {
+        if (pendingClose && minecraft.gui.screen() == this) {
             pendingClose = false;
-            minecraft.setScreen(null);
+            minecraft.gui.setScreen(null);
         }
     }
 
     private void closeAfterFailure(Throwable throwable) {
         LOGGER.error("[ModelSelector] Native selector failed and will close", throwable);
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen == this) {
-            minecraft.setScreen(null);
+        if (minecraft.gui.screen() == this) {
+            minecraft.gui.setScreen(null);
         }
     }
 
