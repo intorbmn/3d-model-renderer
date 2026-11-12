@@ -3,12 +3,14 @@ plugins {
 	id 'com.gradleup.shadow' version '8.3.6'
 }
 
-architectury {
-	platformSetupLoomIde()
-	fabric()
-}
-
 loom {
+	mods {
+		"mmdskin" {
+			sourceSet sourceSets.main
+			sourceSet("main", ":common")
+		}
+	}
+
 	runs {
 		client {
 			client()
@@ -33,12 +35,8 @@ loom {
 }
 
 configurations {
-	common
-	shadowCommon // Don't use shadow from the shadow plugin since it conflicts with Loom.
+	shadowCommon
 	shadowBundle
-	compileClasspath.extendsFrom common
-	runtimeClasspath.extendsFrom common
-	developmentFabric.extendsFrom common
 }
 
 repositories {
@@ -75,13 +73,12 @@ repositories {
 }
 
 dependencies {
-	// Loom 1.17 no-remap không còn variant namedElements.
-	// Dùng project dependency trực tiếp cho compile/runtime classpath.
-	common(project(":common")) { transitive = false }
-	shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive = false }
+	// Fabric Loom non-remap uses the ordinary project output.
+	implementation(project(":common")) { transitive = false }
+	shadowCommon(project(":common")) { transitive = false }
 	
 	// JLayer 运行时由平台包私有化，避免与其他模组的 JPMS 模块导出冲突。
-	common("javazoom:jlayer:1.0.1") { transitive = false }
+	compileOnly("javazoom:jlayer:1.0.1") { transitive = false }
 	shadowBundle("javazoom:jlayer:1.0.1") { transitive = false }
 
 	// Skiko / Skia（轮盘 UI 平滑渲染）
