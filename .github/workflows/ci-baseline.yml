@@ -1,0 +1,68 @@
+name: MPR Baseline CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build Rust engine and Fabric mod
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout source and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust native engine
+        run: cargo build --release --manifest-path rust_engine/Cargo.toml
+
+      - name: Stage Linux native library
+        shell: bash
+        run: |
+          mkdir -p common/src/main/resources/natives/linux-x64
+          cp rust_engine/target/release/libmmd_engine.so \
+            common/src/main/resources/natives/linux-x64/
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Verify Gradle wrapper
+        shell: bash
+        run: |
+          test -f ./gradlew
+          chmod +x ./gradlew
+          ./gradlew --version
+
+      - name: Build Fabric mod
+        run: ./gradlew :fabric:build --no-daemon -x test
+
+      - name: Upload Fabric artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpr-fabric-baseline
+          path: |
+            fabric/build/libs/*.jar
+            !fabric/build/libs/*-dev*.jar
+            !fabric/build/libs/*-sources*.jar
+          if-no-files-found: error
+          retention-days: 14
