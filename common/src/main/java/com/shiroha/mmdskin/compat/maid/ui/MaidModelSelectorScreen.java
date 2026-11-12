@@ -99,9 +99,10 @@ public class MaidModelSelectorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
         if (!layout.listBox.contains(mouseX, mouseY)) {
-            return super.mouseScrolled(mouseX, mouseY, delta);
+            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         }
         targetScroll = Mth.clamp(targetScroll - (float) delta * 12.0f, 0.0f, maxScroll());
         return true;
