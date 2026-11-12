@@ -58,7 +58,7 @@ public final class NativeLibraryLoader {
         if (!androidDetected) {
             String vendor = System.getProperty("java.vendor", "").toLowerCase();
             String vmName = System.getProperty("java.vm.name", "").toLowerCase();
-            androidDetected = vendor.contains("android") || vmName.contains("dalvik") || vmName.contains("art");
+            androidDetected = vendor.contains("android") || vmName.contains("dalvik") || vmName.equals("art");
         }
         isAndroid = androidDetected;
         isLinux = System.getProperty("os.name").toLowerCase().contains("linux") && !isAndroid;
