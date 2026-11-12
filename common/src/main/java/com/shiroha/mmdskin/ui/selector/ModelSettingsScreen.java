@@ -103,7 +103,7 @@ public class ModelSettingsScreen extends Screen {
             return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         if (layout.eyeToggle.contains(mouseX, mouseY)) {
@@ -180,7 +180,6 @@ public class ModelSettingsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        double delta = scrollY;
         double delta = scrollY;
         return layout.panel.contains(mouseX, mouseY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
