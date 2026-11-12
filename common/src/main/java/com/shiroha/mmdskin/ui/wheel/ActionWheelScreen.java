@@ -1,10 +1,14 @@
 package com.shiroha.mmdskin.ui.wheel;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
+import net.minecraft.client.input.MouseButtonEvent;
+
 import com.shiroha.mmdskin.ui.config.ActionWheelConfigScreen;
 import com.shiroha.mmdskin.ui.wheel.service.ActionOption;
 import com.shiroha.mmdskin.ui.wheel.service.ActionWheelService;
 import com.shiroha.mmdskin.ui.wheel.service.DefaultActionWheelService;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -47,12 +51,12 @@ public class ActionWheelScreen extends AbstractWheelScreen {
         initWheelLayout();
 
         this.addRenderableWidget(createWheelIconButton(Component.literal("⚙"), btn -> {
-            this.minecraft.setScreen(new ActionWheelConfigScreen(this));
+            this.minecraft.gui.setScreen(new ActionWheelConfigScreen(this));
         }));
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (actionSlots.isEmpty()) {
             renderWheelBase(guiGraphics, mouseX, mouseY, partialTick, List.of());
             renderEmptyState(guiGraphics, Component.translatable("gui.mmdskin.action_wheel.no_actions"));
@@ -66,7 +70,7 @@ public class ActionWheelScreen extends AbstractWheelScreen {
             renderCenterBubble(guiGraphics, centerText, style.lineColor());
         }
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private List<WheelEntry> buildEntries() {
@@ -79,7 +83,7 @@ public class ActionWheelScreen extends AbstractWheelScreen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && selectedSlot >= 0 && selectedSlot < actionSlots.size()) {
+        if (button == InputConstants.MOUSE_BUTTON_LEFT && selectedSlot >= 0 && selectedSlot < actionSlots.size()) {
             ActionSlot slot = actionSlots.get(selectedSlot);
             executeAction(slot);
             this.onClose();
