@@ -7,7 +7,7 @@ import com.shiroha.mmdskin.ui.selector.MaterialVisibilityScreen;
 import com.shiroha.mmdskin.util.KeyMappingUtil;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -58,19 +58,19 @@ public class MaidConfigWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         renderWheelBase(guiGraphics, mouseX, mouseY, partialTick, buildEntries());
 
         String centerText = selectedSlot >= 0 ? configSlots.get(selectedSlot).name : maidName;
         renderCenterBubble(guiGraphics, centerText, style.lineColor());
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
     public void tick() {
         super.tick();
-        if (Minecraft.getInstance().screen != this) {
+        if (Minecraft.getInstance().gui.screen() != this) {
             return;
         }
 
@@ -107,17 +107,17 @@ public class MaidConfigWheelScreen extends AbstractWheelScreen {
     }
 
     private void openMaidModelSelector() {
-        Minecraft.getInstance().setScreen(new MaidModelSelectorScreen(maidUUID, maidEntityId, maidName));
+        Minecraft.getInstance().gui.setScreen(new MaidModelSelectorScreen(maidUUID, maidEntityId, maidName));
     }
 
     private void openMaidActionWheel() {
-        Minecraft.getInstance().setScreen(new MaidActionWheelScreen(maidUUID, maidEntityId, maidName));
+        Minecraft.getInstance().gui.setScreen(new MaidActionWheelScreen(maidUUID, maidEntityId, maidName));
     }
 
     private void openMaidMaterialVisibility() {
         MaterialVisibilityScreen screen = MaterialVisibilityScreen.createForMaid(maidUUID, maidName);
         if (screen != null) {
-            Minecraft.getInstance().setScreen(screen);
+            Minecraft.getInstance().gui.setScreen(screen);
         } else {
             Minecraft.getInstance().gui.getChat().addMessage(
                     Component.translatable("message.mmdskin.maid.model_not_found"));
