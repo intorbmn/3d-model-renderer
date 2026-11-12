@@ -9,9 +9,6 @@ architectury {
 }
 
 loom {
-	mixin {
-		defaultRefmapName = "mmdskin-fabric-refmap.json"
-	}
 	runs {
 		client {
 			client()
