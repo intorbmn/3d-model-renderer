@@ -373,7 +373,6 @@ public class ModelAnimationScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         double delta = scrollY;
-        double delta = scrollY;
         if (mouseX >= panelX && mouseX <= panelX + PANEL_WIDTH) {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(delta * 24)));
             return true;
