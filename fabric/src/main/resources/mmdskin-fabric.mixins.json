@@ -3,7 +3,6 @@
   "minVersion": "0.8",
   "package": "com.shiroha.mmdskin.mixin.fabric",
   "compatibilityLevel": "JAVA_25",
-  "refmap": "mmdskin-fabric-refmap.json",
   "mixins": [],
   "client": [
     "FabricPlayerRendererMixin",
