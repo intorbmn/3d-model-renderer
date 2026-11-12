@@ -32,7 +32,7 @@ References:
 - Fabric metadata targets Minecraft 26.3 and Java 25.
 - The optional Touhou Little Maid mixin and its legacy compatibility layer are deferred from the first port milestone. The source file is excluded, not deleted.
 - The Rust engine source and JNI boundary remain separate from the Minecraft Java port.
-- Architectury API is still declared in the current Gradle files. Do not describe it as removed unless its dependency-removal change is applied and source references have been checked.
+- Architectury API has been removed from the Gradle files. No Java source, mixin config or Fabric metadata referenced it, so nothing else needed to change.
 
 ## Remaining Java and game API work
 
@@ -82,7 +82,7 @@ A successful Gradle build does not prove runtime compatibility or multiplayer sy
 ## Current implementation status (2026-11-13)
 
 - The branch is configured for Java 25, Gradle 9.8.2, Minecraft 26.3, Fabric Loader 0.20.1, Fabric API 0.166.0+26.3, and Fabric Loom 1.19-SNAPSHOT.
-- The build currently retains Architectury API 22.0.5.
+- The build no longer depends on Architectury API.
 - The dedicated workflow `.github/workflows/ci-fabric-26-3.yml` is intended to build `:fabric:build` with Java 25 and recursively checked-out Rust submodules.
 - The independent JNI workflow is configured separately; do not mark JNI verified until its run succeeds.
 - This is build-infrastructure and porting work only. No runtime compatibility claim is made here.

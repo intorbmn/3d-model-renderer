@@ -54,7 +54,6 @@ tasks.register("prepareNativeResources", Copy) {
 }
 
 dependencies {
-    implementation("dev.architectury:architectury:${project.architectury_api_version}")
     compileOnly("net.fabricmc:fabric-loader:${project.loader_version}")
     compileOnly("javazoom:jlayer:1.0.1") { transitive = false }
 

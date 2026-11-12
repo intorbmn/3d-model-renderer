@@ -82,12 +82,6 @@ dependencies {
 	// Fabric API
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
-	// Architectury API - 内嵌到模组中
-	implementation("dev.architectury:architectury-fabric:${project.architectury_api_version}") {
-		exclude group: "net.fabricmc.fabric-api"
-	}
-	include("dev.architectury:architectury-fabric:${project.architectury_api_version}")
-	
 	// Cloth Config API - 配置界面
 	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
