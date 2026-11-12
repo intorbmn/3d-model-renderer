@@ -1,11 +1,13 @@
-/* 职责：以原生 GuiGraphics 渲染模型设置界面。 */
+/* 职责：以原生 GuiGraphicsExtractor 渲染模型设置界面。 */
 package com.shiroha.mmdskin.ui.selector;
+
+import net.minecraft.client.input.MouseButtonEvent;
 
 import com.shiroha.mmdskin.config.ModelConfigData;
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
 import com.shiroha.mmdskin.ui.selector.application.ModelSettingsApplicationService;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -80,7 +82,7 @@ public class ModelSettingsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         try {
             updateLayout();
@@ -159,17 +161,21 @@ public class ModelSettingsScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == 0 && activeSlider != ActiveSlider.NONE) {
             updateSliderValue(activeSlider, mouseX);
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        return layout.panel.contains(mouseX, mouseY) || super.mouseScrolled(mouseX, mouseY, delta);
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
+        return layout.panel.contains(mouseX, mouseY) || super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -184,8 +190,8 @@ public class ModelSettingsScreen extends Screen {
     @Override
     public void onClose() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen == this) {
-            minecraft.setScreen(parentScreen);
+        if (minecraft.gui.screen() == this) {
+            minecraft.gui.setScreen(parentScreen);
             return;
         }
         super.onClose();
@@ -334,7 +340,7 @@ public class ModelSettingsScreen extends Screen {
         };
     }
 
-    private void renderFallback(GuiGraphics guiGraphics) {
+    private void renderFallback(GuiGraphicsExtractor guiGraphics) {
         float eyeAngleNormalized = normalized(
                 config.eyeMaxAngle,
                 ModelConfigData.MIN_EYE_MAX_ANGLE,
@@ -350,11 +356,11 @@ public class ModelSettingsScreen extends Screen {
         TranslucentTrayChrome.drawOverlay(guiGraphics, this.width, this.height);
         TranslucentTrayChrome.drawPanel(guiGraphics, layout.panel.x, layout.panel.y, layout.panel.w, layout.panel.h);
 
-        guiGraphics.drawString(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
-        guiGraphics.drawString(this.font, shorten(modelName, 14), layout.header.x, layout.header.y + 10, TranslucentTrayChrome.SUBTITLE_TEXT, false);
+        guiGraphics.text(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
+        guiGraphics.text(this.font, shorten(modelName, 14), layout.header.x, layout.header.y + 10, TranslucentTrayChrome.SUBTITLE_TEXT, false);
 
         drawFallbackCard(guiGraphics, layout.eyeCard, Component.translatable("gui.mmdskin.model_settings.eye_tracking").getString());
-        guiGraphics.drawString(this.font, Component.translatable("gui.mmdskin.model_settings.eye_tracking_enabled").getString(), layout.eyeCard.x + 4, layout.eyeCard.y + 13, TranslucentTrayChrome.BODY_TEXT, false);
+        guiGraphics.text(this.font, Component.translatable("gui.mmdskin.model_settings.eye_tracking_enabled").getString(), layout.eyeCard.x + 4, layout.eyeCard.y + 13, TranslucentTrayChrome.BODY_TEXT, false);
         drawFallbackSlider(
                 guiGraphics,
                 layout.eyeSlider,
@@ -387,7 +393,7 @@ public class ModelSettingsScreen extends Screen {
                     ? TranslucentTrayChrome.CARD_SELECTED
                     : TranslucentTrayChrome.cardBackground(false, hoveredTarget == slotHoverTarget(i));
             guiGraphics.fill(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, bg);
-            guiGraphics.drawCenteredString(this.font, buildQuickSlotLabel(binding), rect.centerX(), rect.y + 4, TranslucentTrayChrome.TITLE_TEXT);
+            guiGraphics.centeredText(this.font, buildQuickSlotLabel(binding), rect.centerX(), rect.y + 4, TranslucentTrayChrome.TITLE_TEXT);
         }
 
         drawFallbackButton(guiGraphics, layout.saveButton, Component.translatable("gui.mmdskin.model_settings.save").getString(), hoveredTarget == HoverTarget.SAVE);
@@ -396,26 +402,26 @@ public class ModelSettingsScreen extends Screen {
         drawFallbackButton(guiGraphics, layout.doneButton, Component.translatable("gui.done").getString(), hoveredTarget == HoverTarget.DONE);
     }
 
-    private void drawFallbackCard(GuiGraphics guiGraphics, UiRect rect, String title) {
+    private void drawFallbackCard(GuiGraphicsExtractor guiGraphics, UiRect rect, String title) {
         TranslucentTrayChrome.fillListArea(guiGraphics, rect.x, rect.y, rect.w, rect.h);
-        guiGraphics.drawString(this.font, title, rect.x + 4, rect.y + 3, TranslucentTrayChrome.BODY_TEXT, false);
+        guiGraphics.text(this.font, title, rect.x + 4, rect.y + 3, TranslucentTrayChrome.BODY_TEXT, false);
     }
 
-    private void drawFallbackSlider(GuiGraphics guiGraphics, UiRect rect, String label, float normalized) {
-        guiGraphics.drawString(this.font, label, rect.x, rect.y - 8, TranslucentTrayChrome.SUBTITLE_TEXT, false);
+    private void drawFallbackSlider(GuiGraphicsExtractor guiGraphics, UiRect rect, String label, float normalized) {
+        guiGraphics.text(this.font, label, rect.x, rect.y - 8, TranslucentTrayChrome.SUBTITLE_TEXT, false);
         guiGraphics.fill(rect.x, rect.y + 3, rect.x + rect.w, rect.y + 7, 0x28FFFFFF);
         int fillRight = rect.x + Math.round(rect.w * normalized);
         guiGraphics.fill(rect.x, rect.y + 3, fillRight, rect.y + 7, 0x58FFFFFF);
     }
 
-    private void drawFallbackToggle(GuiGraphics guiGraphics, UiRect rect, boolean enabled, boolean hovered) {
+    private void drawFallbackToggle(GuiGraphicsExtractor guiGraphics, UiRect rect, boolean enabled, boolean hovered) {
         guiGraphics.fill(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h, hovered ? 0x30FFFFFF : 0x1A000000);
         int knobSize = rect.h - 2;
         int knobX = enabled ? rect.x + rect.w - knobSize - 1 : rect.x + 1;
         guiGraphics.fill(knobX, rect.y + 1, knobX + knobSize, rect.y + rect.h - 1, 0xFFDDE8F8);
     }
 
-    private void drawFallbackButton(GuiGraphics guiGraphics, UiRect rect, String text, boolean hovered) {
+    private void drawFallbackButton(GuiGraphicsExtractor guiGraphics, UiRect rect, String text, boolean hovered) {
         TranslucentTrayChrome.drawButton(guiGraphics, this.font, rect.x, rect.y, rect.w, rect.h, text, hovered, true);
     }
 
@@ -429,22 +435,22 @@ public class ModelSettingsScreen extends Screen {
     }
 
     private void flushPendingActions(Minecraft minecraft) {
-        if (pendingOpenAnimConfig && minecraft.screen == this) {
+        if (pendingOpenAnimConfig && minecraft.gui.screen() == this) {
             pendingOpenAnimConfig = false;
-            minecraft.setScreen(new ModelAnimationScreen(modelName, this));
+            minecraft.gui.setScreen(new ModelAnimationScreen(modelName, this));
             return;
         }
-        if (pendingClose && minecraft.screen == this) {
+        if (pendingClose && minecraft.gui.screen() == this) {
             pendingClose = false;
-            minecraft.setScreen(parentScreen);
+            minecraft.gui.setScreen(parentScreen);
         }
     }
 
     private void closeAfterFailure(Throwable throwable) {
         LOGGER.error("[ModelSettings] Native settings render failed and will close", throwable);
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen == this) {
-            minecraft.setScreen(parentScreen);
+        if (minecraft.gui.screen() == this) {
+            minecraft.gui.setScreen(parentScreen);
         }
     }
 
