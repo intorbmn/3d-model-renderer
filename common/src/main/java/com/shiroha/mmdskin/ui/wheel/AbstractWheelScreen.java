@@ -117,8 +117,8 @@ public abstract class AbstractWheelScreen extends Screen {
 
         String display = fitText(text, Math.max(88, Math.round(innerRadius * 1.4f)));
         int textWidth = this.font.width(display);
-        guiGraphics.drawString(this.font, display, centerX - textWidth / 2 + 1, centerY - 4, style.textShadow(), false);
-        guiGraphics.drawString(this.font, display, centerX - textWidth / 2, centerY - 5, textColor, false);
+        guiGraphics.text(this.font, display, centerX - textWidth / 2 + 1, centerY - 4, style.textShadow(), false);
+        guiGraphics.text(this.font, display, centerX - textWidth / 2, centerY - 5, textColor, false);
     }
 
     protected void renderEmptyState(GuiGraphics guiGraphics, Component hint) {
@@ -128,7 +128,7 @@ public abstract class AbstractWheelScreen extends Screen {
         int y = centerY + outerRadius / 2 + 18;
         fillRoundedRect(guiGraphics, x, y, width, height, 12, withAlpha(style.centerBorder(), 228));
         fillRoundedRect(guiGraphics, x + 1, y + 1, width - 2, height - 2, 11, withAlpha(style.centerBg(), 196));
-        guiGraphics.drawCenteredString(this.font, hint, centerX, y + 13, TEXT_PRIMARY);
+        guiGraphics.centeredText(this.font, hint, centerX, y + 13, TEXT_PRIMARY);
     }
 
     protected Button createWheelIconButton(Component label, Button.OnPress onPress) {
@@ -139,7 +139,7 @@ public abstract class AbstractWheelScreen extends Screen {
 
     private void renderBackdrop(GuiGraphics guiGraphics) {
         if (this.minecraft == null || this.minecraft.level == null) {
-            this.renderBackground(guiGraphics);
+            guiGraphics.fill(0, 0, this.width, this.height, 0xFF101318);
         }
         guiGraphics.fill(0, 0, this.width, this.height, BACKDROP_DIM);
     }
@@ -199,8 +199,8 @@ public abstract class AbstractWheelScreen extends Screen {
         String display = fitText(text, Math.max(62, maxWidth));
         int width = this.font.width(display);
         int color = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.36f + pop * 0.64f);
-        guiGraphics.drawString(this.font, display, centerTextX - width / 2 + 1, centerTextY - 4, style.textShadow(), false);
-        guiGraphics.drawString(this.font, display, centerTextX - width / 2, centerTextY - 5, color, false);
+        guiGraphics.text(this.font, display, centerTextX - width / 2 + 1, centerTextY - 4, style.textShadow(), false);
+        guiGraphics.text(this.font, display, centerTextX - width / 2, centerTextY - 5, color, false);
     }
 
     private void renderDualEntry(GuiGraphics guiGraphics, String icon, String label, int centerTextX, int centerTextY, float pop, int maxWidth) {
@@ -210,8 +210,8 @@ public abstract class AbstractWheelScreen extends Screen {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(centerTextX, centerTextY - 10.0f, 0.0f);
         guiGraphics.pose().scale(1.0f + pop * 0.08f, 1.0f + pop * 0.08f, 1.0f);
-        guiGraphics.drawString(this.font, displayIcon, -iconWidth / 2 + 1, 0, style.textShadow(), false);
-        guiGraphics.drawString(this.font, displayIcon, -iconWidth / 2, -1, iconColor, false);
+        guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2 + 1, centerTextY - 10, style.textShadow());
+        guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2, centerTextY - 11, iconColor);
         guiGraphics.pose().popPose();
 
         String displayLabel = fitText(label, Math.max(56, Math.round(maxWidth * 0.76f)));
@@ -220,8 +220,8 @@ public abstract class AbstractWheelScreen extends Screen {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(centerTextX, centerTextY + 4.0f, 0.0f);
         guiGraphics.pose().scale(0.90f + pop * 0.02f, 0.90f + pop * 0.02f, 1.0f);
-        guiGraphics.drawString(this.font, displayLabel, -labelWidth / 2 + 1, 0, style.textShadow(), false);
-        guiGraphics.drawString(this.font, displayLabel, -labelWidth / 2, -1, labelColor, false);
+        guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2 + 1, centerTextY + 4, style.textShadow());
+        guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2, centerTextY + 3, labelColor);
         guiGraphics.pose().popPose();
     }
 
