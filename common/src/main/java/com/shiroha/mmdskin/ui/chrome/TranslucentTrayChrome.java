@@ -2,7 +2,7 @@
 package com.shiroha.mmdskin.ui.chrome;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /** 文件职责：统一托盘界面的半透明外观与基础绘制。 */
@@ -33,41 +33,41 @@ public final class TranslucentTrayChrome {
     private TranslucentTrayChrome() {
     }
 
-    public static void drawOverlay(GuiGraphics graphics, int screenWidth, int screenHeight) {
+    public static void drawOverlay(GuiGraphicsExtractor graphics, int screenWidth, int screenHeight) {
         graphics.fill(0, 0, screenWidth, screenHeight, OVERLAY);
     }
 
-    public static void drawPanel(GuiGraphics graphics, int x, int y, int width, int height) {
+    public static void drawPanel(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         graphics.fill(x, y, x + width, y + height, PANEL_OUTER);
         if (width > 2 && height > 2) {
             graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, PANEL_INNER);
         }
     }
 
-    public static void fillListArea(GuiGraphics graphics, int x, int y, int width, int height) {
+    public static void fillListArea(GuiGraphicsExtractor graphics, int x, int y, int width, int height) {
         graphics.fill(x, y, x + width, y + height, LIST_BACKGROUND);
     }
 
-    public static void drawSeparator(GuiGraphics graphics, int x, int y, int width) {
+    public static void drawSeparator(GuiGraphicsExtractor graphics, int x, int y, int width) {
         graphics.fill(x, y, x + width, y + 1, SEPARATOR);
     }
 
-    public static void drawButton(GuiGraphics graphics, Font font,
+    public static void drawButton(GuiGraphicsExtractor graphics, Font font,
                                   int x, int y, int width, int height,
                                   String text, boolean hovered, boolean enabled) {
         int background = enabled ? (hovered ? BUTTON_HOVER : BUTTON_BACKGROUND) : BUTTON_DISABLED;
         int textColor = enabled ? TITLE_TEXT : MUTED_TEXT;
         graphics.fill(x, y, x + width, y + height, background);
-        graphics.drawCenteredString(font, text, x + width / 2, y + Math.max(0, (height - font.lineHeight) / 2), textColor);
+        graphics.centeredText(font, text, x + width / 2, y + Math.max(0, (height - font.lineHeight) / 2), textColor);
     }
 
-    public static void drawButton(GuiGraphics graphics, Font font,
+    public static void drawButton(GuiGraphicsExtractor graphics, Font font,
                                   int x, int y, int width, int height,
                                   Component text, boolean hovered, boolean enabled) {
         drawButton(graphics, font, x, y, width, height, text.getString(), hovered, enabled);
     }
 
-    public static void drawScrollbar(GuiGraphics graphics, int x, int top, int bottom, float offset, float maxScroll) {
+    public static void drawScrollbar(GuiGraphicsExtractor graphics, int x, int top, int bottom, float offset, float maxScroll) {
         if (maxScroll <= 0.0f) {
             return;
         }
