@@ -78,7 +78,7 @@ public class MaidModelSelectorScreen extends Screen {
             return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         if (layout.doneButton.contains(mouseX, mouseY)) {
