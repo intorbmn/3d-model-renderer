@@ -354,37 +354,87 @@ public abstract class AbstractWheelScreen extends Screen {
      * Rasterizes an annular sector through the GUI extractor. 26.3 no longer
      * exposes the immediate-mode vertex uploader used by the old wheel renderer.
      */
-    private void drawRing(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
+    private void drawRing(GuiGraphicsExtractor graphics, float cx, float cy,
                           float inner, float outer, float startDeg, float sweepDeg, int color) {
-        int minX = (int) Math.floor(cx - outer);
-        int maxX = (int) Math.ceil(cx + outer);
+        if (outer <= 0.0f || sweepDeg <= 0.0f) {
+            return;
+        }
+
         int minY = (int) Math.floor(cy - outer);
         int maxY = (int) Math.ceil(cy + outer);
         float innerSq = inner * inner;
         float outerSq = outer * outer;
+        boolean fullCircle = sweepDeg >= 359.9f;
+        double startRad = Math.toRadians(startDeg);
+        double endRad = Math.toRadians(startDeg + sweepDeg);
+        float startCos = (float) Math.cos(startRad);
+        float startSin = (float) Math.sin(startRad);
+        float endCos = (float) Math.cos(endRad);
+        float endSin = (float) Math.sin(endRad);
 
         for (int y = minY; y <= maxY; y++) {
-            int runStart = -1;
             float dy = y + 0.5f - cy;
-            for (int x = minX; x <= maxX; x++) {
-                float dx = x + 0.5f - cx;
-                float distanceSq = dx * dx + dy * dy;
-                boolean inside = distanceSq >= innerSq && distanceSq <= outerSq;
-                if (inside && sweepDeg < 359.9f) {
-                    float angle = (float) Math.toDegrees(Math.atan2(dy, dx));
-                    float relative = (angle - startDeg + 360.0f) % 360.0f;
-                    inside = relative <= sweepDeg;
+            float dySq = dy * dy;
+            if (dySq > outerSq) {
+                continue;
+            }
+
+            float outerSpan = (float) Math.sqrt(outerSq - dySq);
+            float minDx = -outerSpan;
+            float maxDx = outerSpan;
+
+            if (!fullCircle) {
+                // Intersect the horizontal scanline with the two half-planes
+                // that define this counter-clockwise sector (sweep < 180°).
+                if (Math.abs(startSin) < 1.0e-6f) {
+                    if (startCos * dy < 0.0f) {
+                        continue;
+                    }
+                } else {
+                    float bound = startCos * dy / startSin;
+                    if (startSin > 0.0f) {
+                        maxDx = Math.min(maxDx, bound);
+                    } else {
+                        minDx = Math.max(minDx, bound);
+                    }
                 }
 
-                if (inside && runStart < 0) {
-                    runStart = x;
-                } else if (!inside && runStart >= 0) {
-                    graphics.fill(runStart, y, x, y + 1, color);
-                    runStart = -1;
+                if (Math.abs(endSin) < 1.0e-6f) {
+                    if (-endCos * dy < 0.0f) {
+                        continue;
+                    }
+                } else {
+                    float bound = endCos * dy / endSin;
+                    if (endSin > 0.0f) {
+                        minDx = Math.max(minDx, bound);
+                    } else {
+                        maxDx = Math.min(maxDx, bound);
+                    }
                 }
             }
-            if (runStart >= 0) {
-                graphics.fill(runStart, y, maxX + 1, y + 1, color);
+
+            if (minDx > maxDx) {
+                continue;
+            }
+
+            int rowMinX = (int) Math.ceil(cx + minDx - 0.5f);
+            int rowMaxX = (int) Math.floor(cx + maxDx - 0.5f);
+            if (rowMinX > rowMaxX) {
+                continue;
+            }
+
+            if (dySq < innerSq) {
+                float innerSpan = (float) Math.sqrt(innerSq - dySq);
+                int leftMaxX = (int) Math.floor(cx - innerSpan - 0.5f);
+                int rightMinX = (int) Math.ceil(cx + innerSpan - 0.5f);
+                if (rowMinX <= leftMaxX) {
+                    graphics.fill(rowMinX, y, Math.min(rowMaxX + 1, leftMaxX + 1), y + 1, color);
+                }
+                if (rowMaxX >= rightMinX) {
+                    graphics.fill(Math.max(rowMinX, rightMinX), y, rowMaxX + 1, y + 1, color);
+                }
+            } else {
+                graphics.fill(rowMinX, y, rowMaxX + 1, y + 1, color);
             }
         }
     }
