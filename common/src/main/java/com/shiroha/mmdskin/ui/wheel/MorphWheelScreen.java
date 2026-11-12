@@ -102,12 +102,15 @@ public class MorphWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == InputConstants.MOUSE_BUTTON_LEFT && selectedSlot >= 0 && selectedSlot < morphSlots.size()) {
             executeMorph(morphSlots.get(selectedSlot));
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
