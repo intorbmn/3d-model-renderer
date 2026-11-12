@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL46C;
 
@@ -50,13 +50,13 @@ public class PerformanceHud {
         PerformanceHud.modelQueryPort = modelQueryPort != null ? modelQueryPort : NativeModelQueryPort.noop();
     }
 
-    public static void render(GuiGraphics graphics) {
+    public static void render(GuiGraphicsExtractor graphics) {
         if (!ConfigManager.isDebugHudEnabled()) {
             return;
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.options.hideGui || minecraft.options.renderDebug) {
+        if (minecraft.gui.hud.isHidden() || minecraft.options.renderDebug) {
             return;
         }
 
@@ -81,7 +81,7 @@ public class PerformanceHud {
 
         int y = PADDING + INNER_PAD;
         for (HudLine line : cachedLines) {
-            graphics.drawString(font, line.text(), PADDING + INNER_PAD, y, line.color(), true);
+            graphics.text(font, line.text(), PADDING + INNER_PAD, y, line.color(), true);
             y += LINE_HEIGHT;
         }
     }
