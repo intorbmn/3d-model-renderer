@@ -5,7 +5,7 @@ import com.shiroha.mmdskin.compat.maid.service.DefaultMaidActionService;
 import com.shiroha.mmdskin.compat.maid.service.MaidActionService;
 import com.shiroha.mmdskin.ui.wheel.AbstractWheelScreen;
 import com.shiroha.mmdskin.ui.wheel.service.ActionOption;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ public class MaidActionWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (actionSlots.isEmpty()) {
             renderWheelBase(guiGraphics, mouseX, mouseY, partialTick, List.of());
             renderEmptyState(guiGraphics, Component.translatable("gui.mmdskin.maid_action_wheel.no_actions"));
@@ -69,7 +69,7 @@ public class MaidActionWheelScreen extends AbstractWheelScreen {
             renderCenterBubble(guiGraphics, centerText, style.lineColor());
         }
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     private List<WheelEntry> buildEntries() {
@@ -81,14 +81,17 @@ public class MaidActionWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && selectedSlot >= 0 && selectedSlot < actionSlots.size()) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+        if (button == com.mojang.blaze3d.platform.InputConstants.MOUSE_BUTTON_LEFT && selectedSlot >= 0 && selectedSlot < actionSlots.size()) {
             ActionSlot slot = actionSlots.get(selectedSlot);
             executeAction(slot);
             this.onClose();
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     private void executeAction(ActionSlot slot) {
