@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,12 +92,11 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
             if (monitoredKey.isDown()) {
                 isDown = true;
             } else {
-                long window = Minecraft.getInstance().getWindow().getWindow();
                 InputConstants.Key key = KeyMappingUtil.getBoundKey(monitoredKey);
                 isDown = key != null
-                        && key.getType() == InputConstants.Type.KEYSYM
+                        && key.getType() == InputConstants.Type.KEYBOARD
                         && key.getValue() != -1
-                        && GLFW.glfwGetKey(window, key.getValue()) == GLFW.GLFW_PRESS;
+                        && InputConstants.isKeyDown(key.getValue());
             }
 
             if (!isDown) {

@@ -9,6 +9,7 @@ import com.shiroha.mmdskin.stage.client.camera.port.StageCameraSessionPort;
 import com.shiroha.mmdskin.stage.client.camera.port.StageCameraUiPort;
 import com.shiroha.mmdskin.stage.client.camera.port.StagePlayerSyncPort;
 import com.shiroha.mmdskin.stage.client.playback.port.PlayerStageAnimationPort;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.chat.Component;
@@ -236,9 +237,7 @@ public final class MMDCameraController {
             return;
         }
 
-        long window = minecraft.getWindow().getWindow();
-        boolean escNow = org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE)
-                == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+        boolean escNow = InputConstants.isKeyDown(InputConstants.KEY_ESCAPE);
         if (escNow && !escWasPressed) {
             if (stateMachine.isPlaying()) {
                 long now = System.nanoTime();
