@@ -4,7 +4,7 @@ loom {
 	mods {
 		"mmdskin" {
 			sourceSet sourceSets.main
-			sourceSet("main", ":common")
+			sourceSet("main", project(":common"))
 		}
 	}
 
