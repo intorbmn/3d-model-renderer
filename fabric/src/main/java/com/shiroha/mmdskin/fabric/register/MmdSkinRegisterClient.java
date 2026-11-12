@@ -17,10 +17,10 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Fabric 客户端注册入口
@@ -32,17 +32,20 @@ public class MmdSkinRegisterClient {
 
     private static final FabricClientNetworkBindings NETWORK_BINDINGS = new FabricClientNetworkBindings();
 
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+        Identifier.fromNamespaceAndPath("mmdskin", "main"));
+
     static KeyMapping keyConfigWheel = new KeyMapping("key.mmdskin.config_wheel",
-        InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, "key.categories.mmdskin");
+        InputConstants.Type.KEYBOARD, InputConstants.KEY_LALT, CATEGORY);
 
     static KeyMapping keyMaidConfigWheel = new KeyMapping("key.mmdskin.maid_config_wheel",
-        InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, "key.categories.mmdskin");
+        InputConstants.Type.KEYBOARD, InputConstants.KEY_B, CATEGORY);
 
     static final KeyMapping[] keyQuickModels = new KeyMapping[4];
     static {
         for (int i = 0; i < 4; i++) {
             keyQuickModels[i] = new KeyMapping("key.mmdskin.quick_model_" + (i + 1),
-                InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), "key.categories.mmdskin");
+                InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY);
         }
     }
 
