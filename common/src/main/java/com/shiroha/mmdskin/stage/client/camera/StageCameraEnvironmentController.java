@@ -17,12 +17,16 @@ final class StageCameraEnvironmentController {
     }
 
     void enterCinematicMode(Minecraft minecraft) {
-        previousHideGui = minecraft.options.hideGui;
-        minecraft.options.hideGui = true;
+        previousHideGui = minecraft.gui.hud.isHidden();
+        if (!previousHideGui) {
+            minecraft.gui.hud.toggle();
+        }
     }
 
     void leaveCinematicMode(Minecraft minecraft) {
-        minecraft.options.hideGui = previousHideGui;
+        if (minecraft.gui.hud.isHidden() != previousHideGui) {
+            minecraft.gui.hud.toggle();
+        }
     }
 
     void restoreCameraType(Minecraft minecraft) {
@@ -40,7 +44,7 @@ final class StageCameraEnvironmentController {
             minecraft.mouseHandler.releaseMouse();
             mouseReleased = true;
             if (minecraft.gui != null) {
-                minecraft.gui.setOverlayMessage(Component.translatable("gui.mmdskin.stage.mouse_released"), false);
+                minecraft.gui.hud.setOverlayMessage(Component.translatable("gui.mmdskin.stage.mouse_released"), false);
             }
         }
     }
