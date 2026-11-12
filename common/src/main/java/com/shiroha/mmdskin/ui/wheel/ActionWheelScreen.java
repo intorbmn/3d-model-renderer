@@ -82,14 +82,17 @@ public class ActionWheelScreen extends AbstractWheelScreen {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (button == InputConstants.MOUSE_BUTTON_LEFT && selectedSlot >= 0 && selectedSlot < actionSlots.size()) {
             ActionSlot slot = actionSlots.get(selectedSlot);
             executeAction(slot);
             this.onClose();
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     private void executeAction(ActionSlot slot) {
