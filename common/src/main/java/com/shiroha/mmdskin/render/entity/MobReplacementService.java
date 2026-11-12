@@ -40,6 +40,7 @@ public final class MobReplacementService {
     }
 
     private static boolean isPlayerLike(LivingEntity entity) {
-        return entity.getType().toString().equals(EntityType.PLAYER.toString());
+        Identifier entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        return Identifier.fromNamespaceAndPath("minecraft", "player").equals(entityTypeId);
     }
 }
