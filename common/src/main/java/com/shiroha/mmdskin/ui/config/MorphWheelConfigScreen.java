@@ -67,7 +67,7 @@ public class MorphWheelConfigScreen extends Screen {
             return super.mouseClicked(event, doubleClick);
         }
         if (!layout.panel.contains(mouseX, mouseY)) {
-            return super.mouseClicked(mouseX, mouseY, button);
+            return super.mouseClicked(event, doubleClick);
         }
 
         if (layout.refreshButton.contains(mouseX, mouseY)) {
@@ -105,7 +105,6 @@ public class MorphWheelConfigScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        double delta = scrollY;
         double delta = scrollY;
         if (layout.availableList.contains(mouseX, mouseY)) {
             availableTargetScroll = clampScroll(availableTargetScroll - (float) delta * 16.0f, maxAvailableScroll());
