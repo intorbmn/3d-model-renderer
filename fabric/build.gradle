@@ -91,19 +91,19 @@ dependencies {
 	// ImGui workbench（开发/本地运行）
 	
 	// Fabric Loader
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	
 	// Fabric API
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
 	// Architectury API - 内嵌到模组中
-	modImplementation("dev.architectury:architectury-fabric:${project.architectury_api_version}") {
+	implementation("dev.architectury:architectury-fabric:${project.architectury_api_version}") {
 		exclude group: "net.fabricmc.fabric-api"
 	}
 	include("dev.architectury:architectury-fabric:${project.architectury_api_version}")
 	
 	// Cloth Config API - 配置界面
-	modApi("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
+	implementation("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
 	
