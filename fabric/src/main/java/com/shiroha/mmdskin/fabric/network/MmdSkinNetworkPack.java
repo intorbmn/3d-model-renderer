@@ -3,7 +3,6 @@ package com.shiroha.mmdskin.fabric.network;
 import java.util.UUID;
 
 import com.shiroha.mmdskin.player.sync.ClientNetworkBindings;
-import com.shiroha.mmdskin.fabric.register.MmdSkinRegisterCommon;
 import com.shiroha.mmdskin.compat.maid.runtime.MaidMMDModelManager;
 import com.shiroha.mmdskin.player.animation.PendingAnimSignalCache;
 import com.shiroha.mmdskin.player.sync.PlayerModelSyncService;
@@ -12,7 +11,6 @@ import com.shiroha.mmdskin.player.sync.MorphSyncHelper;
 import com.shiroha.mmdskin.ui.network.NetworkOpCode;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
@@ -36,37 +34,45 @@ public class MmdSkinNetworkPack {
         };
     }
 
+    /** 发送旧协议缓冲区；未连接服务器，或服务器没有安装本模组时直接跳过。 */
+    private static void send(FriendlyByteBuf buffer) {
+        if (!ClientPlayNetworking.canSend(MmdSkinPayloads.C2S.TYPE)) {
+            return;
+        }
+        ClientPlayNetworking.send(new MmdSkinPayloads.C2S(MmdSkinPayloads.toBytes(buffer)));
+    }
+
     public static void sendToServer(int opCode, UUID playerUUID, int arg0) {
-        FriendlyByteBuf buffer = PacketByteBufs.create();
+        FriendlyByteBuf buffer = MmdSkinPayloads.newBuffer();
         buffer.writeInt(opCode);
         buffer.writeUUID(playerUUID);
         buffer.writeInt(arg0);
-        ClientPlayNetworking.send(MmdSkinRegisterCommon.SKIN_C2S, buffer);
+        send(buffer);
     }
 
     public static void sendBinaryToServer(int opCode, UUID playerUUID, byte[] data) {
-        FriendlyByteBuf buffer = PacketByteBufs.create();
+        FriendlyByteBuf buffer = MmdSkinPayloads.newBuffer();
         buffer.writeInt(opCode);
         buffer.writeUUID(playerUUID);
         buffer.writeByteArray(data);
-        ClientPlayNetworking.send(MmdSkinRegisterCommon.SKIN_C2S, buffer);
+        send(buffer);
     }
 
     public static void sendToServer(int opCode, UUID playerUUID, String animId) {
-        FriendlyByteBuf buffer = PacketByteBufs.create();
+        FriendlyByteBuf buffer = MmdSkinPayloads.newBuffer();
         buffer.writeInt(opCode);
         buffer.writeUUID(playerUUID);
         buffer.writeUtf(animId);
-        ClientPlayNetworking.send(MmdSkinRegisterCommon.SKIN_C2S, buffer);
+        send(buffer);
     }
 
     public static void sendToServer(int opCode, UUID playerUUID, int entityId, String data) {
-        FriendlyByteBuf buffer = PacketByteBufs.create();
+        FriendlyByteBuf buffer = MmdSkinPayloads.newBuffer();
         buffer.writeInt(opCode);
         buffer.writeUUID(playerUUID);
         buffer.writeInt(entityId);
         buffer.writeUtf(data);
-        ClientPlayNetworking.send(MmdSkinRegisterCommon.SKIN_C2S, buffer);
+        send(buffer);
     }
 
     public static void doInClient(FriendlyByteBuf buffer) {

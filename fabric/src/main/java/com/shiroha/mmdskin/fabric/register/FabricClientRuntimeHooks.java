@@ -19,10 +19,11 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -47,7 +48,10 @@ final class FabricClientRuntimeHooks {
         ClientTickEvents.END_CLIENT_TICK.register(client -> onClientTick(minecraft));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> client.execute(() -> onJoin(client)));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> onDisconnect());
-        HudRenderCallback.EVENT.register((graphics, tickDelta) -> PerformanceHud.render(graphics));
+        // 26.3 移除了 HudRenderCallback，HUD 元素改为注册到 HudElementRegistry。
+        HudElementRegistry.addLast(
+                Identifier.fromNamespaceAndPath("mmdskin", "performance_hud"),
+                (graphics, deltaTracker) -> PerformanceHud.render(graphics));
     }
 
     private void onClientTick(Minecraft minecraft) {

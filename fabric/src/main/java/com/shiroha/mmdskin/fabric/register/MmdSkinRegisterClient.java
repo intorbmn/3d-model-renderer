@@ -4,18 +4,21 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.shiroha.mmdskin.fabric.config.ModConfigScreen;
 import com.shiroha.mmdskin.fabric.maid.MaidCompatMixinPlugin;
 import com.shiroha.mmdskin.fabric.network.MmdSkinNetworkPack;
+import com.shiroha.mmdskin.fabric.network.MmdSkinPayloads;
 import com.shiroha.mmdskin.mixin.fabric.KeyMappingAccessor;
 import com.shiroha.mmdskin.render.entity.EntityRenderFactory;
 import com.shiroha.mmdskin.ui.wheel.ConfigWheelScreen;
 import com.shiroha.mmdskin.util.KeyMappingUtil;
 import java.io.File;
+import java.util.Optional;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.EntityType;
@@ -62,12 +65,12 @@ public class MmdSkinRegisterClient {
             return InputConstants.UNKNOWN;
         });
 
-        KeyBindingHelper.registerKeyBinding(keyConfigWheel);
+        KeyMappingHelper.registerKeyMapping(keyConfigWheel);
         if (MaidCompatMixinPlugin.isMaidModLoaded()) {
-            KeyBindingHelper.registerKeyBinding(keyMaidConfigWheel);
+            KeyMappingHelper.registerKeyMapping(keyMaidConfigWheel);
         }
         for (KeyMapping keyQuickModel : keyQuickModels) {
-            KeyBindingHelper.registerKeyBinding(keyQuickModel);
+            KeyMappingHelper.registerKeyMapping(keyQuickModel);
         }
 
         ConfigWheelScreen.setModSettingsScreenFactory(() -> ModConfigScreen.create(null));
@@ -79,8 +82,13 @@ public class MmdSkinRegisterClient {
             for (File i : modelDirs) {
                 if (!i.getName().startsWith("EntityPlayer") && !i.getName().equals("DefaultAnim") && !i.getName().equals("Shader")) {
                     String mcEntityName = i.getName().replace('.', ':');
-                    if (EntityType.byString(mcEntityName).isPresent()) {
-                        EntityRendererRegistry.register(EntityType.byString(mcEntityName).get(), new EntityRenderFactory<>(mcEntityName));
+                    // 26.3 移除了 EntityType.byString，改为按 Identifier 查实体注册表。
+                    Identifier entityId = Identifier.tryParse(mcEntityName);
+                    Optional<EntityType<?>> entityType = entityId == null
+                        ? Optional.empty()
+                        : BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+                    if (entityType.isPresent()) {
+                        EntityRendererRegistry.register(entityType.get(), new EntityRenderFactory<>(mcEntityName));
                     } else {
                         logger.warn(mcEntityName + " 实体不存在，跳过渲染注册");
                     }
@@ -88,11 +96,14 @@ public class MmdSkinRegisterClient {
             }
         }
 
-        ClientPlayNetworking.registerGlobalReceiver(MmdSkinRegisterCommon.SKIN_S2C, (client, handler, buf, responseSender) -> {
-            FriendlyByteBuf copiedBuf = new FriendlyByteBuf(buf.copy());
-            client.execute(() -> {
-                MmdSkinNetworkPack.doInClient(copiedBuf);
-                copiedBuf.release();
+        ClientPlayNetworking.registerGlobalReceiver(MmdSkinPayloads.S2C.TYPE, (payload, context) -> {
+            FriendlyByteBuf buf = MmdSkinPayloads.wrap(payload.data());
+            context.client().execute(() -> {
+                try {
+                    MmdSkinNetworkPack.doInClient(buf);
+                } catch (RuntimeException e) {
+                    logger.warn("丢弃格式错误的服务端数据包", e);
+                }
             });
         });
     }

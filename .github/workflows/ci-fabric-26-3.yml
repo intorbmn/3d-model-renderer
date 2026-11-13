@@ -164,6 +164,17 @@ jobs:
           full me.shedaniel.clothconfig2.api.AbstractConfigListEntry 45
           show net.minecraft.client.gui.components.AbstractWidget 'xtract|render' 12
 
+      - name: Dump non-public members of Mixin targets and Fabric glue (diagnostic)
+        if: always()
+        run: |
+          set +e
+          exec > >(tee -a ci-report/diagnostics.txt) 2>&1
+          JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
+          LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
+          FCP=$(find "$HOME/.gradle" -type f -name 'fabric-*.jar' ! -name '*sources*' ! -name '*loom*' 2>/dev/null | paste -sd:)
+          chmod +x ci/dump-mixin-targets.sh
+          ci/dump-mixin-targets.sh "$JAR" "$LIBS:$FCP"
+
       - name: Publish CI report to the ci-reports branch
         if: always() && github.event_name != 'pull_request'
         env:
