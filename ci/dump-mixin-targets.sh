@@ -116,4 +116,11 @@ echo "##### AbstractTexture default sampler arguments"
 javap -p -c -cp "$CP" net.minecraft.client.renderer.texture.AbstractTexture 2>/dev/null | sed -n '/AbstractTexture();/,/return/p' | cut -c1-200
 find_callers 'FirstPersonHandsAndItemsRenderer'
 
+
+
+# --- Held items: how vanilla orients an item in the hand before submitting it -----------------
+code net.minecraft.client.renderer.entity.layers.ItemInHandLayer 'submitArmWithItem|void submit' 80
+code 'net.minecraft.client.renderer.item.ItemStackRenderState$LayerRenderState' 'void submit|applyTransform' 60
+code net.minecraft.client.renderer.item.ItemStackRenderState 'void submit' 40
+
 rm -rf "$WORK"

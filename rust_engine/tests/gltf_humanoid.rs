@@ -24,11 +24,21 @@ fn recognised_humanoid_gets_mmd_bones() {
         assert!(model.bone_manager.find_bone_by_name(name).is_some(), "missing MMD bone {name}");
     }
 
+    // Held items: in the rest pose the hand frame must be unrotated, as it is for a PMX model, even
+    // though the loader turned the T-pose arms down with rest rotations.
+    let mut model = model;
+    model.tick_animation(0.0);
+    for (side, hand) in [("right", model.get_right_hand_matrix()), ("left", model.get_left_hand_matrix())] {
+        let (_, rotation, _) = hand.to_scale_rotation_translation();
+        let angle = rotation.angle_between(glam::Quat::IDENTITY).to_degrees();
+        println!("HAND\t{side}\trest rotation {angle:.2} deg");
+        assert!(angle < 1.0, "{side} hand frame is rotated {angle} deg in the rest pose");
+    }
+
     // Play the bundled walk motion: a recognised humanoid must actually move, and stay sane.
     let rest: Vec<glam::Vec3> = model.update_positions.clone();
     let walk = concat!(env!("CARGO_MANIFEST_DIR"), "/../common/src/main/resources/assets/mmdskin/default_anim/walk.vmd");
     let animation = std::sync::Arc::new(mmd_engine::animation::VmdAnimation::load(walk).expect("walk.vmd"));
-    let mut model = model;
     model.set_layer_animation(0, Some(animation));
     model.play_layer(0);
     let (mut moved_max, mut lowest, mut highest) = (0.0f32, f32::INFINITY, f32::NEG_INFINITY);
