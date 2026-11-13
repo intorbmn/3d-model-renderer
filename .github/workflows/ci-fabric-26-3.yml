@@ -15,11 +15,24 @@ permissions:
 jobs:
   compile-java:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # only used to publish the report to the ci-reports branch
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Prepare CI report directory
+        run: |
+          mkdir -p ci-report
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "branch: $GITHUB_REF_NAME"
+            echo "run:    $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "time:   $(date -u +%FT%TZ)"
+            git log -1 --format='subject: %s'
+          } > ci-report/info.txt
 
       - name: Set up Java 25
         uses: actions/setup-java@v4
@@ -34,26 +47,31 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Compile Java modules without building Rust
-        run: ./gradlew :common:compileJava :fabric:compileJava --no-daemon -x prepareNativeResources -x buildRustNative --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :common:compileJava :fabric:compileJava --no-daemon -x prepareNativeResources -x buildRustNative --stacktrace 2>&1 | tee ci-report/compile.log
 
       # Compiling never checks Mixin string targets ("method = ...", "target = ..."), so a
       # green compile can still crash at game start. This checks them against the real jar.
       - name: Mixin validator self-test
         if: always()
-        run: ci/mixin-check/selftest.sh
+        run: |
+          set -o pipefail
+          ci/mixin-check/selftest.sh 2>&1 | tee ci-report/mixin-selftest.txt
 
       - name: Validate Mixin targets against the Minecraft 26.3 jar
         if: always()
         run: |
           JAR=$(find "$HOME/.gradle" -type f -name 'minecraft-merged*.jar' ! -name '*sources*' | head -1)
-          if [ -z "$JAR" ]; then echo "Minecraft jar not found; the compile step did not resolve it"; exit 1; fi
+          if [ -z "$JAR" ]; then echo "Minecraft jar not found; the compile step did not resolve it" | tee ci-report/mixin-check.txt; exit 1; fi
           echo "Using $JAR"
           LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
+          set -o pipefail
           python3 ci/mixin-check/check_mixins.py \
             --src fabric/src/main/java \
             --mixins-json fabric/src/main/resources/mmdskin-fabric.mixins.json \
             --classpath "$JAR:$LIBS" \
-            --summary "$GITHUB_STEP_SUMMARY" --quiet-ok
+            --summary "$GITHUB_STEP_SUMMARY" --quiet-ok 2>&1 | tee ci-report/mixin-check.txt
 
       - name: Render API for the submit-based backend (readable in the run summary)
         if: always()
@@ -61,12 +79,14 @@ jobs:
           JAR=$(find "$HOME/.gradle" -type f -name 'minecraft-merged*.jar' ! -name '*sources*' | head -1)
           [ -n "$JAR" ] || { echo "Minecraft jar not found"; exit 0; }
           LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
-          { echo "## Minecraft 26.3 render API"; echo; ci/dump-render-api.sh "$JAR" "$LIBS"; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "## Minecraft 26.3 render API"; echo; ci/dump-render-api.sh "$JAR" "$LIBS"; } > ci-report/render-api.md
+          cat ci-report/render-api.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Inspect Minecraft 26.3 API (diagnostic)
         if: always()
         run: |
           set +e
+          exec > >(tee -a ci-report/diagnostics.txt) 2>&1
           echo "== candidate Minecraft jars"
           find ~/.gradle -type f -name '*.jar' -path '*minecraft*' ! -name '*sources*' -size +5M 2>/dev/null | head -5
           for jar in $(find ~/.gradle -type f -name '*.jar' -path '*minecraft*' ! -name '*sources*' -size +5M 2>/dev/null | head -3); do
@@ -80,6 +100,7 @@ jobs:
         if: always()
         run: |
           set +e
+          exec > >(tee -a ci-report/diagnostics.txt) 2>&1
           JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
           for c in \
             net.minecraft.client.gui.GuiGraphicsExtractor \
@@ -116,6 +137,7 @@ jobs:
         if: always()
         run: |
           set +e
+          exec > >(tee -a ci-report/diagnostics.txt) 2>&1
           JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
           FJARS=$(find $HOME/.gradle -type f -name 'fabric-*.jar' ! -name '*sources*' ! -name '*loom*' 2>/dev/null)
           FCP=$(echo "$FJARS" | paste -sd:)
@@ -141,6 +163,16 @@ jobs:
           show net.minecraft.core.Registry 'getOptional|containsKey|getValue|get\(' 12
           full me.shedaniel.clothconfig2.api.AbstractConfigListEntry 45
           show net.minecraft.client.gui.components.AbstractWidget 'xtract|render' 12
+
+      - name: Publish CI report to the ci-reports branch
+        if: always() && github.event_name != 'pull_request'
+        env:
+          REPORT_REMOTE: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          sleep 3   # let the tee'd diagnostic steps flush
+          ci/publish-report.sh
 
       - name: Upload compile reports
         if: always()
