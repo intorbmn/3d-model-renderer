@@ -68,7 +68,7 @@ code() {
     /^  [a-zA-Z].*\(.*\).*;$/ { on = ($0 ~ p) }
     on { print }' | grep -E '^  [a-zA-Z]|invoke|putfield|getfield|return' | cut -c1-220 | head -"$max"
 }
-code net.minecraft.client.Camera 'void update\(|void alignWithEntity\(|float calculateFov\(|void extractRenderState\(' 200
-code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities\(' 80
-code net.minecraft.client.Minecraft 'void pick\(' 60
+code net.minecraft.client.Camera 'void update[(]|void alignWithEntity[(]|float calculateFov[(]|void extractRenderState[(]' 200
+code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities[(]' 80
+code net.minecraft.client.Minecraft 'void pick[(]' 60
 dump net.minecraft.client.input.MouseButtonInfo 20
