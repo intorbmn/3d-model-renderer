@@ -1,7 +1,6 @@
 /* 文件职责：协调玩家模型在普通视角、第一人称与 VR 场景中的渲染切换。 */
 package com.shiroha.mmdskin.player.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.config.ModelConfigManager;
 import com.shiroha.mmdskin.config.RuntimeConfigPortHolder;
@@ -17,8 +16,7 @@ import com.shiroha.mmdskin.render.scene.RenderScene;
 import com.shiroha.mmdskin.render.scene.MutableRenderPose;
 import com.shiroha.mmdskin.render.backend.BaseModelInstance;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 /** 文件职责：协调玩家模型在普通视角、第一人称与 VR 场景中的渲染切换。 */
 final class PlayerModelRenderCoordinator {
@@ -31,7 +29,7 @@ final class PlayerModelRenderCoordinator {
                                                    float entityYaw,
                                                    float tickDelta,
                                                    PoseStack matrixStack,
-                                                   MultiBufferSource vertexConsumers,
+                                                   SubmitNodeCollector vertexConsumers,
                                                    int packedLight,
                                                    ManagedModel modelData) {
         ModelInstance model = modelData.modelInstance();
@@ -63,7 +61,6 @@ final class PlayerModelRenderCoordinator {
                 InventoryRenderHelper.renderInInventory(player, model, entityYaw, tickDelta, matrixStack, packedLight, size);
             } else {
                 matrixStack.scale(size[0], size[0], size[0]);
-                RenderSystem.setShader(GameRenderer::getRendertypeEntityTranslucentShader);
                 RenderScene context = isFirstPerson ? RenderScene.FIRST_PERSON : RenderScene.WORLD;
                 model.render(player, params.bodyYaw, params.bodyPitch, params.translation, tickDelta, matrixStack, packedLight, context);
             }

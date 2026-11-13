@@ -92,31 +92,24 @@ jobs:
           JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
           show() {
             echo "##### $1  /$2/"
-            javap -public -cp "$JAR" "$1" 2>&1 | grep -E "$2" | cut -c1-230 | head -${3:-60}
+            javap ${4:--public} -cp "$JAR" "$1" 2>&1 | grep -E "$2" | cut -c1-230 | head -${3:-60}
           }
           full() {
             echo "##### $1 (full)"
             javap -public -cp "$JAR" "$1" 2>&1 | cut -c1-230 | head -${2:-80}
           }
-          show net.minecraft.world.entity.Entity 'Rot|getVehicle|isPassenger|getType\(|position\(|isCrouching|isSwimming|isFallFlying|isInvisible'
-          show net.minecraft.world.entity.LivingEntity 'swing|Swing|hurt|UseItem|UsedItemHand|TicksUsingItem|isUsingItem|isSleeping|BodyRot|HeadRot|attackAnim|walkAnim|isBaby|getMainArm'
-          show net.minecraft.client.player.LocalPlayer 'Rot|swing|Swing|isUsing'
-          show net.minecraft.world.entity.EntityType 'HORSE|DONKEY|MULE|CAMEL|PLAYER|AVATAR|PIG|STRIDER|BOAT|ARMOR_STAND' 40
-          full net.minecraft.world.item.ItemUseAnimation 30
-          show net.minecraft.client.gui.Gui 'hat|hud|Hud|creen|verlay|ubtitle|ActionBar'
-          show net.minecraft.client.gui.components.ChatComponent 'add|Message'
-          show net.minecraft.client.Options 'ebug|Debug|hideGui|guiScale|CameraType|fov|keyUse|keyAttack|keyShift|keyUp|keyJump'
-          show net.minecraft.client.gui.screens.inventory.InventoryScreen 'ecipe|Recipe|Entity|getPlayer'
-          show net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen 'ecipe|Recipe'
-          show net.minecraft.client.Minecraft 'ItemModel|ItemRenderer|EntityRenderDispatcher|getEntityRenderer|gameRenderer|getCameraEntity|execute|getPartialTick|getTimer|getDeltaTracker'
-          show net.minecraft.client.DeltaTracker 'Tick|tick'
-          full net.minecraft.client.renderer.SubmitNodeCollector 60
-          full net.minecraft.client.renderer.entity.EntityRenderer 40
-          full net.minecraft.client.renderer.entity.EntityRendererProvider\$Context 60
-          full net.minecraft.client.renderer.item.ItemModelResolver 30
-          full net.minecraft.client.renderer.item.ItemStackRenderState 50
-          echo "##### classes named like buffer sources / submit nodes / item renderers"
-          unzip -Z1 "$JAR" | grep -E '(MultiBufferSource|RenderBuffers|SubmitNode|ItemRenderer|ItemModelResolver|ItemStackRenderState|ItemDisplayContext)[A-Za-z$]*\.class$' | head -30
+          echo "##### jar entries: EntityType and horse-like entities"
+          unzip -Z1 "$JAR" | grep -E 'world/entity/EntityType[A-Za-z$]*\.class$|world/entity/animal/.*(Horse|Donkey|Mule|Camel|Llama)[A-Za-z$]*\.class$' | head -40
+          full net.minecraft.world.entity.EntityType 45
+          show net.minecraft.world.entity.EntityType 'static final' 25
+          full net.minecraft.world.entity.LivingEntity\$SwingDescription 30
+          show net.minecraft.world.entity.LivingEntity 'wing' 30 -protected
+          full net.minecraft.client.gui.Hud 70
+          full net.minecraft.client.gui.components.debug.DebugScreenEntryList 45
+          show net.minecraft.client.gui.screens.inventory.AbstractContainerScreen 'leftPos|topPos|imageWidth|imageHeight|getRectangle|getGuiLeft|getGuiTop' 20 -protected
+          show net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen 'ecipe' 20 -protected
+          full net.minecraft.client.renderer.entity.state.EntityRenderState 40
+          show net.minecraft.client.renderer.texture.OverlayTexture 'NO_OVERLAY' 5
 
       - name: Upload compile reports
         if: always()

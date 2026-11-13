@@ -7,7 +7,6 @@ import com.shiroha.mmdskin.render.scene.RenderScene;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.level.GameType;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -28,14 +27,16 @@ public class InventoryRenderHelper {
                                         float tickDelta, PoseStack matrixStack, int packedLight, float[] size) {
         Minecraft mc = Minecraft.getInstance();
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        PoseStack modelViewStack = RenderSystem.getModelViewStack();
+        // RenderSystem.getModelViewStack() no longer exposes a PoseStack in 26.3, so the GUI transform
+        // is built on a local stack. The inventory draw path is part of the render-backend port.
+        PoseStack modelViewStack = new PoseStack();
         modelViewStack.pushPose();
 
         int posX, posY;
         if (mc.gameMode.getPlayerMode() != GameType.CREATIVE && mc.gui.screen() instanceof InventoryScreen) {
-            InventoryScreen invScreen = (InventoryScreen) mc.gui.screen();
-            posX = invScreen.getRecipeBookComponent().updateScreenPosition(mc.gui.screen().width, 176);
+            // InventoryScreen.getRecipeBookComponent() was removed; this ignores the recipe-book
+            // offset until a replacement accessor is wired in.
+            posX = (mc.gui.screen().width - 176) / 2;
             posY = (mc.gui.screen().height - 166) / 2;
             modelViewStack.translate(posX + 51, posY + 75, 50);
             modelViewStack.scale(1.5f, 1.5f, 1.5f);
@@ -50,9 +51,8 @@ public class InventoryRenderHelper {
         modelViewStack.scale(20.0f, 20.0f, -20.0f);
 
         Quaternionf rotation = calculateRotation(player);
-        modelViewStack.mulPose(rotation);
+        modelViewStack.rotate(rotation);
 
-        RenderSystem.setShader(GameRenderer::getRendertypeEntityTranslucentShader);
         model.render(player, entityYaw, 0.0f, new Vector3f(0.0f), tickDelta, modelViewStack, packedLight, RenderScene.INVENTORY);
 
         modelViewStack.popPose();

@@ -1,14 +1,12 @@
 /** 文件职责：负责女仆实体的 MMD 渲染与基础动画切换。 */
 package com.shiroha.mmdskin.compat.maid.render;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.compat.maid.runtime.MaidMMDModelManager;
 import com.shiroha.mmdskin.model.runtime.ManagedModel;
 import com.shiroha.mmdskin.player.runtime.EntityAnimState;
 import com.shiroha.mmdskin.render.scene.RenderScene;
 import java.util.UUID;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.LivingEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +44,6 @@ public class MaidMMDRenderer {
                 entity.xRotO = originalXRotO * modelSize;
             }
 
-            RenderSystem.setShader(GameRenderer::getRendertypeEntityTranslucentShader);
             modelData.modelInstance().render(
                     entity,
                     entityYaw,

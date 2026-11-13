@@ -135,7 +135,7 @@ public final class RenderPriorityService {
     private long computeFrameKey() {
         Minecraft minecraft = Minecraft.getInstance();
         long gameTime = minecraft.level != null ? minecraft.level.getGameTime() : 0L;
-        long frameTimeBits = Float.floatToRawIntBits(minecraft.getFrameTime()) & 0xffffffffL;
+        long frameTimeBits = Float.floatToRawIntBits(minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false)) & 0xffffffffL;
         return (gameTime << 32) ^ frameTimeBits;
     }
 

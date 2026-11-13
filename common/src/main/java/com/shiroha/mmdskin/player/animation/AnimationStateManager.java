@@ -75,7 +75,7 @@ public class AnimationStateManager {
     }
 
     private static void updateLayer1Animation(AbstractClientPlayer player, ManagedModel model) {
-        if ((!player.isUsingItem() && !player.swinging && player.hurtTime <= 0) || player.isSleeping()) {
+        if ((!player.isUsingItem() && !player.isSwinging() && player.hurtTime <= 0) || player.isSleeping()) {
             if (model.entityState().stateLayers[1] != EntityAnimState.State.Idle) {
                 model.entityState().stateLayers[1] = EntityAnimState.State.Idle;
                 model.entityState().layerAnimationKeys[1] = null;

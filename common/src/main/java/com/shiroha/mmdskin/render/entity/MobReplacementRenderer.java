@@ -1,6 +1,5 @@
 package com.shiroha.mmdskin.render.entity;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.model.runtime.ManagedModel;
 import com.shiroha.mmdskin.model.runtime.ModelRequestKey;
@@ -8,7 +7,6 @@ import com.shiroha.mmdskin.render.bootstrap.ClientRenderRuntime;
 import com.shiroha.mmdskin.render.policy.RenderPriorityService;
 import com.shiroha.mmdskin.render.scene.MutableRenderPose;
 import com.shiroha.mmdskin.render.scene.RenderScene;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.entity.LivingEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,7 +51,6 @@ public final class MobReplacementRenderer {
                 }
 
                 poseStack.scale(modelScale, modelScale, modelScale);
-                RenderSystem.setShader(GameRenderer::getRendertypeEntityTranslucentShader);
                 model.modelInstance().render(entity, REUSABLE_POSE.bodyYaw, REUSABLE_POSE.bodyPitch, REUSABLE_POSE.translation,
                     tickDelta, poseStack, packedLight, RenderScene.WORLD);
                 return true;

@@ -8,7 +8,7 @@ import com.shiroha.mmdskin.render.bootstrap.ClientRenderRuntime;
 import com.shiroha.mmdskin.scene.client.SceneModelManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.util.Mth;
 
 /**
@@ -20,7 +20,7 @@ public final class PlayerMixinDelegate {
 
     public static PlayerRenderAction handleRender(
             AbstractClientPlayer player, float entityYaw, float tickDelta,
-            PoseStack matrixStack, MultiBufferSource vertexConsumers, int packedLight,
+            PoseStack matrixStack, SubmitNodeCollector vertexConsumers, int packedLight,
             boolean isYsmActive) {
         PlayerRenderSelection selection = PlayerRenderSelectionResolver.resolve(player, isYsmActive);
         if (selection.hasTerminalAction()) {

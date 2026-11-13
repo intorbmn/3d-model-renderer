@@ -2,7 +2,7 @@ package com.shiroha.mmdskin.player.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 
 /** 文件职责：作为平台玩家渲染 mixin 的统一入口。 */
 public final class PlayerRenderEntrypoint {
@@ -14,7 +14,7 @@ public final class PlayerRenderEntrypoint {
             float entityYaw,
             float tickDelta,
             PoseStack poseStack,
-            MultiBufferSource buffers,
+            SubmitNodeCollector buffers,
             int packedLight,
             boolean isYsmActive) {
         return PlayerMixinDelegate.handleRender(player, entityYaw, tickDelta, poseStack, buffers, packedLight, isYsmActive);

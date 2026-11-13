@@ -3,7 +3,8 @@ package com.shiroha.mmdskin.compat.vr;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -20,7 +21,7 @@ public final class VRHandRenderer {
 
     private VRHandRenderer() {}
 
-    public static void renderHandItem(PoseStack poseStack, MultiBufferSource buffer,
+    public static void renderHandItem(PoseStack poseStack, SubmitNodeCollector buffer,
                                        int packedLight, InteractionHand hand) {
         try {
             LocalPlayer player = Minecraft.getInstance().player;
@@ -35,10 +36,9 @@ public final class VRHandRenderer {
                     : ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
 
             poseStack.pushPose();
-            Minecraft.getInstance().getItemRenderer().renderStatic(
-                    player, itemStack, ctx, !isMainHand,
-                    poseStack, buffer, player.level(),
-                    packedLight, OverlayTexture.NO_OVERLAY, 0);
+            ItemStackRenderState itemState = new ItemStackRenderState();
+            Minecraft.getInstance().getItemModelResolver().updateForLiving(itemState, itemStack, ctx, player);
+            itemState.submit(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, 0);
             poseStack.popPose();
         } catch (Exception e) {
             LOGGER.debug("VR 手持物品渲染异常", e);

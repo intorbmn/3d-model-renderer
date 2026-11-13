@@ -1,6 +1,5 @@
 package com.shiroha.mmdskin.scene.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.asset.catalog.ModelCatalogEntry;
 import com.shiroha.mmdskin.bridge.runtime.NativeScenePort;
@@ -10,7 +9,6 @@ import com.shiroha.mmdskin.model.runtime.ModelRequestKey;
 import com.shiroha.mmdskin.render.bootstrap.ClientRenderRuntime;
 import com.shiroha.mmdskin.render.scene.RenderScene;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector3f;
@@ -163,7 +161,6 @@ public final class SceneModelManager {
         poseStack.pushPose();
         poseStack.translate(offsetX, offsetY, offsetZ);
 
-        RenderSystem.setShader(GameRenderer::getRendertypeEntityTranslucentShader);
         modelInstance.render(
                 minecraft.player,
                 placeYaw,

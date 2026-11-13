@@ -7,7 +7,8 @@ import com.shiroha.mmdskin.config.ModelConfigData;
 import com.shiroha.mmdskin.model.runtime.ManagedModel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -22,7 +23,7 @@ import java.nio.ByteOrder;
 public class ItemRenderHelper {
     public interface ExternalItemRenderer {
         boolean renderItems(AbstractClientPlayer player, ManagedModel model,
-                            PoseStack matrixStack, MultiBufferSource vertexConsumers,
+                            PoseStack matrixStack, SubmitNodeCollector vertexConsumers,
                             int packedLight, float tickDelta, float modelScale, float heldItemScale);
     }
 
@@ -64,7 +65,7 @@ public class ItemRenderHelper {
     }
 
     public static void renderItems(AbstractClientPlayer player, ManagedModel model,
-                                   PoseStack matrixStack, MultiBufferSource vertexConsumers,
+                                   PoseStack matrixStack, SubmitNodeCollector vertexConsumers,
                                    int packedLight, float heldItemScale, float tickDelta, float modelScale) {
         if (externalItemRenderer.renderItems(player, model, matrixStack, vertexConsumers,
                 packedLight, tickDelta, modelScale, heldItemScale)) {
@@ -105,7 +106,7 @@ public class ItemRenderHelper {
     }
 
     private static void renderHandItem(AbstractClientPlayer player, ManagedModel model,
-                                          PoseStack matrixStack, MultiBufferSource vertexConsumers,
+                                          PoseStack matrixStack, SubmitNodeCollector vertexConsumers,
                                           int packedLight, InteractionHand hand, float heldItemScale) {
         ItemStack itemStack = player.getItemInHand(hand);
         if (itemStack.isEmpty()) {
@@ -135,10 +136,9 @@ public class ItemRenderHelper {
                 ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                 : ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
 
-        Minecraft.getInstance().getItemRenderer().renderStatic(
-            player, itemStack, displayCtx, !isMainHand,
-            matrixStack, vertexConsumers, player.level(), packedLight, OverlayTexture.NO_OVERLAY, 0
-        );
+        ItemStackRenderState itemState = new ItemStackRenderState();
+        Minecraft.getInstance().getItemModelResolver().updateForLiving(itemState, itemStack, displayCtx, player);
+        itemState.submit(matrixStack, vertexConsumers, packedLight, OverlayTexture.NO_OVERLAY, 0);
 
         matrixStack.popPose();
     }

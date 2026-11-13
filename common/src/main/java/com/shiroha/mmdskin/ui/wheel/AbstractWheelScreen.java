@@ -207,22 +207,22 @@ public abstract class AbstractWheelScreen extends Screen {
         String displayIcon = icon == null ? "" : icon;
         int iconWidth = this.font.width(displayIcon);
         int iconColor = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.42f + pop * 0.58f);
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(centerTextX, centerTextY - 10.0f, 0.0f);
-        guiGraphics.pose().scale(1.0f + pop * 0.08f, 1.0f + pop * 0.08f, 1.0f);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate((float) centerTextX, centerTextY - 10.0f);
+        guiGraphics.pose().scale(1.0f + pop * 0.08f, 1.0f + pop * 0.08f);
         guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2 + 1, centerTextY - 10, style.textShadow());
         guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2, centerTextY - 11, iconColor);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
 
         String displayLabel = fitText(label, Math.max(56, Math.round(maxWidth * 0.76f)));
         int labelWidth = this.font.width(displayLabel);
         int labelColor = blendColors(TEXT_MUTED, TEXT_SECONDARY, 0.52f + pop * 0.38f);
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(centerTextX, centerTextY + 4.0f, 0.0f);
-        guiGraphics.pose().scale(0.90f + pop * 0.02f, 0.90f + pop * 0.02f, 1.0f);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().translate((float) centerTextX, centerTextY + 4.0f);
+        guiGraphics.pose().scale(0.90f + pop * 0.02f, 0.90f + pop * 0.02f);
         guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2 + 1, centerTextY + 4, style.textShadow());
         guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2, centerTextY + 3, labelColor);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 
     private void updateAnimations(int count) {

@@ -2,20 +2,18 @@ package com.shiroha.mmdskin.render.entity;
 
 import com.shiroha.mmdskin.player.render.InventoryRenderHelper;
 
-import com.shiroha.mmdskin.MmdSkin;
 import com.shiroha.mmdskin.model.runtime.ManagedModel;
 import com.shiroha.mmdskin.model.runtime.ModelRequestKey;
 import com.shiroha.mmdskin.render.bootstrap.ClientRenderRuntime;
 import com.shiroha.mmdskin.render.scene.RenderScene;
 import com.shiroha.mmdskin.render.scene.MutableRenderPose;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
@@ -23,11 +21,20 @@ import org.joml.Vector3f;
 
 /**
  * MMD 自定义实体渲染器。
+ *
+ * <p>Minecraft 26.3 renders entities in two steps: {@link #extractRenderState} copies what is needed
+ * into a render state, then {@link #submit} draws from that state. The render state does not carry the
+ * entity, so the entity and frame values the MMD pipeline needs are stored on {@link MmdRenderState}.
  */
-public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
+public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T, MmdSkinRenderer.MmdRenderState> {
 
-    private static final Identifier PLACEHOLDER_TEXTURE =
-            Identifier.fromNamespaceAndPath(MmdSkin.MOD_ID, "textures/entity/placeholder.png");
+    /** Per-frame data handed from extract to submit. */
+    public static final class MmdRenderState extends EntityRenderState {
+        Entity entity;
+        float partialTick;
+        float entityYaw;
+        int packedLight;
+    }
 
     protected final String modelName;
 
@@ -42,9 +49,29 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
     }
 
     @Override
-    public void render(T entityIn, float entityYaw, float tickDelta, PoseStack matrixStackIn,
-                       MultiBufferSource bufferIn, int packedLightIn) {
-        super.render(entityIn, entityYaw, tickDelta, matrixStackIn, bufferIn, packedLightIn);
+    public MmdRenderState createRenderState() {
+        return new MmdRenderState();
+    }
+
+    @Override
+    public void extractRenderState(T entity, MmdRenderState state, float partialTick) {
+        super.extractRenderState(entity, state, partialTick);
+        state.entity = entity;
+        state.partialTick = partialTick;
+        state.entityYaw = entity.getYRot(partialTick);
+        state.packedLight = getPackedLightCoords(entity, partialTick);
+    }
+
+    @Override
+    public void submit(MmdRenderState state, PoseStack matrixStackIn,
+                       SubmitNodeCollector collector, CameraRenderState camera) {
+        super.submit(state, matrixStackIn, collector, camera);
+
+        Entity entityIn = state.entity;
+        if (entityIn == null) return;
+        float entityYaw = state.entityYaw;
+        float tickDelta = state.partialTick;
+        int packedLightIn = state.packedLight;
 
         ManagedModel model = ClientRenderRuntime.get().modelRepository()
                 .acquire(ModelRequestKey.mob(entityIn, modelName));
@@ -62,10 +89,9 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
         }
 
         if (InventoryRenderHelper.isInventoryScreen()) {
-            renderInInventory(entityIn, model, entityYaw, tickDelta, matrixStackIn, packedLightIn, size);
+            renderInInventory(entityIn, model, entityYaw, tickDelta, packedLightIn, size);
         } else {
             matrixStackIn.scale(size[0], size[0], size[0]);
-            RenderSystem.setShader(GameRenderer::getRendertypeEntityCutoutNoCullShader);
             model.modelInstance().render(entityIn, reusablePose.bodyYaw, reusablePose.bodyPitch, reusablePose.translation,
                              tickDelta, matrixStackIn, packedLightIn, RenderScene.WORLD);
         }
@@ -73,13 +99,14 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
         matrixStackIn.popPose();
     }
 
-    private void renderInInventory(T entityIn, ManagedModel model, float entityYaw,
-                                    float tickDelta, PoseStack matrixStack, int packedLight, float[] size) {
+    private void renderInInventory(Entity entityIn, ManagedModel model, float entityYaw,
+                                    float tickDelta, int packedLight, float[] size) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.gui.screen() == null) return;
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        PoseStack modelViewStack = RenderSystem.getModelViewStack();
+        // RenderSystem.getModelViewStack() no longer exposes a PoseStack in 26.3, so the GUI transform
+        // is built on a local stack. The inventory draw path is part of the render-backend port.
+        PoseStack modelViewStack = new PoseStack();
 
         int posX = (mc.gui.screen().width - 176) / 2;
         int posY = (mc.gui.screen().height - 166) / 2;
@@ -92,9 +119,8 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
                 .rotateZ((float) Math.PI)
                 .rotateX(-entityIn.getXRot() * ((float) Math.PI / 180F))
                 .rotateY(-entityIn.getYRot() * ((float) Math.PI / 180F));
-        modelViewStack.mulPose(reusableQuat);
+        modelViewStack.rotate(reusableQuat);
 
-        RenderSystem.setShader(GameRenderer::getRendertypeEntityCutoutNoCullShader);
         reusableVec.set(0.0f);
         model.modelInstance().render(entityIn, entityYaw, 0.0f, reusableVec,
                           tickDelta, modelViewStack, packedLight, RenderScene.INVENTORY);
@@ -105,10 +131,5 @@ public class MmdSkinRenderer<T extends Entity> extends EntityRenderer<T> {
         out[0] = model.renderProperties().modelScale();
         out[1] = model.renderProperties().inventoryScale();
         return out;
-    }
-
-    @Override
-    public Identifier getTextureLocation(T entity) {
-        return PLACEHOLDER_TEXTURE;
     }
 }
