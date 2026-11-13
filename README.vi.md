@@ -41,6 +41,7 @@ Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/Enti
 
 ```
 .minecraft/3d-skin/
+├── Cards/                   card model (.png) tạo bằng 3D Model Renderer Studio
 ├── EntityPlayer/
 │   ├── Miku/
 │   │   ├── model.pmx        (hoặc .pmd, .vrm, .glb, .gltf)
@@ -55,6 +56,12 @@ Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/Enti
 Trong game, giữ **Alt trái** để mở vòng menu, chọn **Model Switch** rồi chọn thư mục model.
 
 Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animation và cấu hình theo từng model nằm trong tài liệu gốc (tiếng Trung): [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Phần lớn vẫn đúng với bản này, trừ các mục về Forge và Minecraft 1.20.1.
+
+### Card model
+
+Card model là một file PNG: phần ảnh là nhân vật, phía sau gói toàn bộ model (lưới, texture, kích thước và màu), giống card Koikatsu. Tạo card bằng [3D Model Renderer Studio](https://github.com/intorbmn/3d-model-renderer-studio): chạy trên trình duyệt, xem trước model với các động tác của mod và nhận các loại model giống mod. Bỏ file `.png` vào `3d-skin/Cards/`. Card được xếp đầu danh sách chọn model và đánh dấu nổi bật bằng nhãn **CARD**; thư mục model thường vẫn dùng như cũ.
+
+Card Koikatsu chỉ chứa thông số cho trình tạo nhân vật của game đó, không có model 3D, nên mod không đọc được. Hãy xuất nhân vật ra PMX bằng KKBP exporter rồi biến file PMX thành card trong studio.
 
 ### Model GLB/glTF và animation
 

@@ -373,6 +373,11 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
         model.texture_paths.len(),
     );
 
+    // Held items follow the hand frame. A PMX hand bone is unrotated in the rest pose; glTF joints
+    // carry rest rotations (and the arms were turned down above), so measure them once and take
+    // them out of the hand matrix.
+    model.capture_hand_rest_frames();
+
     Ok(LoadedVrmModel {
         model,
         extensions: vrm_ext,

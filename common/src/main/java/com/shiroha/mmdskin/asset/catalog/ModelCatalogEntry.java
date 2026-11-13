@@ -24,8 +24,15 @@ public class ModelCatalogEntry {
     private final boolean isPMD;
     private final boolean isVRM;
     private final long fileSize;
+    private final boolean card;
 
     public ModelCatalogEntry(String folderName, String folderPath, String modelFilePath, String modelFileName, boolean isPMD, boolean isVRM, long fileSize) {
+        this(folderName, folderPath, modelFilePath, modelFileName, isPMD, isVRM, fileSize, false);
+    }
+
+    public ModelCatalogEntry(String folderName, String folderPath, String modelFilePath, String modelFileName,
+                             boolean isPMD, boolean isVRM, long fileSize, boolean card) {
+        this.card = card;
         this.folderName = folderName;
         this.folderPath = folderPath;
         this.modelFilePath = modelFilePath;
@@ -43,6 +50,15 @@ public class ModelCatalogEntry {
     public boolean isPMD() { return isPMD; }
     public boolean isVRM() { return isVRM; }
     public long getFileSize() { return fileSize; }
+    /** True for a model that comes from a PNG card in the Cards folder. */
+    public boolean isCard() { return card; }
+
+    /** Prefix of the catalog key of card models, which keeps them apart from plain model folders. */
+    public static final String CARD_PREFIX = "[Card] ";
+
+    public static boolean isCardKey(String modelName) {
+        return modelName != null && modelName.startsWith(CARD_PREFIX);
+    }
     public String getCatalogKey() { return folderName; }
 
     public String getFormattedSize() {
@@ -56,7 +72,10 @@ public class ModelCatalogEntry {
     }
 
     public String getFormatDescription() {
-        if (isVRM) return "VRM";
+        if (isVRM) {
+            String name = modelFileName.toLowerCase(java.util.Locale.ROOT);
+            return name.endsWith(".glb") ? "GLB" : name.endsWith(".gltf") ? "glTF" : "VRM";
+        }
         return isPMD ? "PMD" : "PMX";
     }
 
@@ -68,17 +87,18 @@ public class ModelCatalogEntry {
         }
 
         List<ModelCatalogEntry> models = new ArrayList<>();
+        // Cards are listed first; the selector shows them in their own highlighted group.
+        List<ModelCatalogEntry> cards = scanCards();
+        models.addAll(cards);
+
         File entityPlayerDir = PathConstants.getEntityPlayerDir();
-
-        if (!entityPlayerDir.exists() || !entityPlayerDir.isDirectory()) {
-            logger.warn("EntityPlayer 目录不存在: {}", entityPlayerDir.getAbsolutePath());
-            return models;
-        }
-
-        File[] modelDirs = entityPlayerDir.listFiles(File::isDirectory);
+        File[] modelDirs = entityPlayerDir.isDirectory() ? entityPlayerDir.listFiles(File::isDirectory) : null;
         if (modelDirs == null) {
-            return models;
+            logger.warn("EntityPlayer folder not found: {}", entityPlayerDir.getAbsolutePath());
+            cache = new CacheSnapshot(List.copyOf(models), System.currentTimeMillis());
+            return cache.models();
         }
+        int folderStart = models.size();
 
         for (File modelDir : modelDirs) {
             ModelCatalogEntry info = scanModelFolder(modelDir);
@@ -88,9 +108,44 @@ public class ModelCatalogEntry {
             }
         }
 
-        models.sort((a, b) -> a.getFolderName().compareToIgnoreCase(b.getFolderName()));
-        cache = new CacheSnapshot(models, System.currentTimeMillis());
-        return models;
+        models.subList(folderStart, models.size()).sort((a, b) -> a.getFolderName().compareToIgnoreCase(b.getFolderName()));
+        cache = new CacheSnapshot(List.copyOf(models), System.currentTimeMillis());
+        return cache.models();
+    }
+
+    /**
+     * Lists the PNG cards in {@code 3d-skin/Cards} and extracts each one (once) into
+     * {@code 3d-skin/Cards/.extracted}. Broken cards are skipped with a log line.
+     */
+    private static List<ModelCatalogEntry> scanCards() {
+        List<ModelCatalogEntry> cards = new ArrayList<>();
+        File cardDir = PathConstants.getCardDir();
+        File[] files = cardDir.isDirectory()
+                ? cardDir.listFiles(f -> f.isFile() && f.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".png"))
+                : null;
+        if (files == null) {
+            return cards;
+        }
+        java.util.Arrays.sort(files, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        java.nio.file.Path cache = PathConstants.getCardCacheDir().toPath();
+        for (File file : files) {
+            if (!ModelCardFile.isCard(file.toPath())) {
+                logger.warn("Not a 3D Model Renderer card (Koikatsu cards must be converted in the studio): {}", file.getName());
+                continue;
+            }
+            try {
+                ModelCardFile.Extracted card = ModelCardFile.extract(file.toPath(), cache);
+                String stem = file.getName().substring(0, file.getName().length() - 4);
+                File model = card.modelFile().toFile();
+                String type = card.modelType();
+                cards.add(new ModelCatalogEntry(CARD_PREFIX + stem, model.getParentFile().getAbsolutePath(),
+                        model.getAbsolutePath(), model.getName(), type.equals("pmd"),
+                        type.equals("vrm") || type.equals("glb") || type.equals("gltf"), file.length(), true));
+            } catch (java.io.IOException | RuntimeException e) {
+                logger.warn("Could not read card {}: {}", file.getName(), e.getMessage());
+            }
+        }
+        return cards;
     }
 
     public static void invalidateCache() {

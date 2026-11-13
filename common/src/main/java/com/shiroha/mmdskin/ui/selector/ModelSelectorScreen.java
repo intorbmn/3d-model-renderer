@@ -30,6 +30,10 @@ public class ModelSelectorScreen extends Screen {
     private static final int LIST_PADDING = 5;
     private static final int CARD_HEIGHT = 14;
     private static final int CARD_GAP = 4;
+    private static final int CARD_MODEL_TINT = 0x30FF8FB0;
+    private static final int CARD_MODEL_ACCENT = 0xFFFF6F93;
+    private static final int CARD_MODEL_BADGE = 0xC0E2557A;
+    private static final int CARD_MODEL_TEXT = 0xFFFFE3EC;
 
     private final List<ModelSelectionApplicationService.ModelCard> modelCards = new ArrayList<>();
 
@@ -232,7 +236,7 @@ public class ModelSelectorScreen extends Screen {
         guiGraphics.text(this.font, this.title.getString(), layout.header.x, layout.header.y + 1, TranslucentTrayChrome.TITLE_TEXT, false);
         String stats = Component.translatable("gui.mmdskin.model_selector.stats",
                 Math.max(0, modelCards.size() - 1),
-                shorten(currentModel, 8)).getString();
+                shorten(currentModel != null && currentModel.startsWith("[Card] ") ? currentModel.substring(7) : currentModel, 8)).getString();
         guiGraphics.text(this.font, stats, layout.header.x, layout.header.y + 10, TranslucentTrayChrome.SUBTITLE_TEXT, false);
         drawFallbackButton(guiGraphics, layout.doneButton, Component.translatable("gui.done").getString(), hoveredButton == ButtonTarget.DONE, true);
         drawFallbackButton(guiGraphics, layout.refreshButton, Component.translatable("gui.mmdskin.refresh").getString(), hoveredButton == ButtonTarget.REFRESH, true);
@@ -261,7 +265,20 @@ public class ModelSelectorScreen extends Screen {
             boolean hovered = i == hoveredCard;
             int bg = TranslucentTrayChrome.cardBackground(selected, hovered);
             guiGraphics.fill(list.x + 4, y, list.x + list.w - 4, y + CARD_HEIGHT, bg);
-            guiGraphics.text(this.font, buildCardLabel(card), list.x + 7, y + 3, TranslucentTrayChrome.BODY_TEXT, false);
+            if (card.card()) {
+                // Models from PNG cards stand out: a warm tint, an accent bar and a badge.
+                guiGraphics.fill(list.x + 4, y, list.x + list.w - 4, y + CARD_HEIGHT, CARD_MODEL_TINT);
+                guiGraphics.fill(list.x + 4, y, list.x + 6, y + CARD_HEIGHT, CARD_MODEL_ACCENT);
+                String badge = Component.translatable("gui.mmdskin.model_selector.card_badge").getString();
+                int badgeWidth = this.font.width(badge) + 4;
+                int badgeX = list.x + list.w - 6 - badgeWidth;
+                guiGraphics.fill(badgeX, y + 2, badgeX + badgeWidth, y + CARD_HEIGHT - 2, CARD_MODEL_BADGE);
+                guiGraphics.text(this.font, badge, badgeX + 2, y + 3, 0xFFFFFFFF, false);
+                String label = fitToWidth(card.label(), badgeX - (list.x + 9) - 2);
+                guiGraphics.text(this.font, label, list.x + 9, y + 3, CARD_MODEL_TEXT, false);
+            } else {
+                guiGraphics.text(this.font, buildCardLabel(card), list.x + 7, y + 3, TranslucentTrayChrome.BODY_TEXT, false);
+            }
             y += CARD_HEIGHT + CARD_GAP;
         }
     }
@@ -322,6 +339,18 @@ public class ModelSelectorScreen extends Screen {
     private static String buildCardLabel(ModelSelectionApplicationService.ModelCard card) {
         String name = shorten(card.displayName(), 14);
         return card.configurable() ? name : name + " (Default)";
+    }
+
+    private String fitToWidth(String value, int maxWidth) {
+        if (this.font.width(value) <= maxWidth) {
+            return value;
+        }
+        String ellipsis = "..";
+        int end = value.length();
+        while (end > 0 && this.font.width(value.substring(0, end) + ellipsis) > maxWidth) {
+            end--;
+        }
+        return value.substring(0, end) + ellipsis;
     }
 
     private static String shorten(String value, int maxChars) {

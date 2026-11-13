@@ -7,6 +7,11 @@ public interface ModelSelectionGateway {
 
     void refreshModelCatalog();
 
+    /** True when the model comes from a PNG card. */
+    default boolean isCardModel(String modelName) {
+        return false;
+    }
+
     String getSelectedModel();
 
     void setSelectedModel(String modelName);

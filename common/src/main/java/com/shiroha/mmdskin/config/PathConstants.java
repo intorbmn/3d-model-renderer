@@ -16,6 +16,9 @@ public final class PathConstants {
 
     public static final String ENTITY_PLAYER_DIR = "EntityPlayer";
     public static final String SCENE_MODEL_DIR = "SceneModel";
+    /** PNG model cards made with 3D Model Renderer Studio. */
+    public static final String CARD_DIR = "Cards";
+    public static final String CARD_CACHE_DIR = ".extracted";
 
     public static final String DEFAULT_ANIM_DIR = "DefaultAnim";
     public static final String CUSTOM_ANIM_DIR = "CustomAnim";
@@ -70,6 +73,14 @@ public final class PathConstants {
         return new File(getSkinRootDir(), ENTITY_PLAYER_DIR);
     }
 
+    public static File getCardDir() {
+        return new File(getSkinRootDir(), CARD_DIR);
+    }
+
+    public static File getCardCacheDir() {
+        return new File(getCardDir(), CARD_CACHE_DIR);
+    }
+
     public static File getSceneModelDir() {
         return new File(getSkinRootDir(), SCENE_MODEL_DIR);
     }
@@ -99,6 +110,12 @@ public final class PathConstants {
     }
 
     public static File getModelDir(String modelName) {
+        if (com.shiroha.mmdskin.asset.catalog.ModelCatalogEntry.isCardKey(modelName)) {
+            var entry = com.shiroha.mmdskin.asset.catalog.ModelCatalogEntry.findByFolderName(modelName);
+            if (entry != null) {
+                return new File(entry.getFolderPath());
+            }
+        }
         return new File(getEntityPlayerDir(), modelName);
     }
 

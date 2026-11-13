@@ -20,9 +20,9 @@ public class ModelSelectionApplicationService {
 
     public List<ModelCard> loadModelCards() {
         List<ModelCard> cards = new ArrayList<>();
-        cards.add(new ModelCard(UIConstants.DEFAULT_MODEL_NAME, false));
+        cards.add(new ModelCard(UIConstants.DEFAULT_MODEL_NAME, false, false));
         for (String modelName : gateway.loadAvailableModelNames()) {
-            cards.add(new ModelCard(modelName, true));
+            cards.add(new ModelCard(modelName, true, gateway.isCardModel(modelName)));
         }
         return cards;
     }
@@ -56,7 +56,11 @@ public class ModelSelectionApplicationService {
         return new QuickSwitchResult(QuickSwitchStatus.SWITCHED, modelName);
     }
 
-    public record ModelCard(String displayName, boolean configurable) {
+    public record ModelCard(String displayName, boolean configurable, boolean card) {
+        /** The name without the card prefix, for display. */
+        public String label() {
+            return card && displayName.startsWith("[Card] ") ? displayName.substring(7) : displayName;
+        }
     }
 
     public record QuickSwitchResult(QuickSwitchStatus status, String targetModelName) {

@@ -116,6 +116,8 @@ pub struct MmdModel {
 
     /// VRM 模型标志（影响坐标系处理）
     is_vrm: bool,
+    /// Inverse rest rotation of the right and left hand bones (identity for PMX/PMD).
+    hand_rest_inverse: [Quat; 2],
     vrm_runtime_state: Option<Box<VrmModelRuntimeState>>,
 
     // 模型全局变换
@@ -268,6 +270,7 @@ impl MmdModel {
             blink_morph_index: None,
             debug_logged: false,
             is_vrm: false,
+            hand_rest_inverse: [Quat::IDENTITY; 2],
             vrm_runtime_state: None,
             model_transform: Mat4::IDENTITY,
             physics: None,
@@ -1601,26 +1604,41 @@ impl MmdModel {
         self.is_vrm
     }
 
+    const RIGHT_HAND_NAMES: [&'static str; 4] = ["右手首", "右腕", "right_hand", "RightHand"];
+    const LEFT_HAND_NAMES: [&'static str; 4] = ["左手首", "左腕", "left_hand", "LeftHand"];
+
+    fn hand_global(&self, names: &[&str]) -> Option<Mat4> {
+        names
+            .iter()
+            .find_map(|name| self.bone_manager.find_bone_by_name(name))
+            .map(|idx| self.bone_manager.get_global_transform(idx))
+    }
+
+    /// Records the hand bones' rotation in the rest pose so the hand matrices start unrotated, as
+    /// they do for a PMX model. Call once after loading, before any animation is set.
+    pub fn capture_hand_rest_frames(&mut self) {
+        self.tick_animation(0.0);
+        for (slot, names) in [&Self::RIGHT_HAND_NAMES[..], &Self::LEFT_HAND_NAMES[..]].into_iter().enumerate() {
+            self.hand_rest_inverse[slot] = self
+                .hand_global(names)
+                .map(|m| m.to_scale_rotation_translation().1.normalize().inverse())
+                .filter(|q| q.is_finite())
+                .unwrap_or(Quat::IDENTITY);
+        }
+    }
+
     /// 获取右手矩阵
     pub fn get_right_hand_matrix(&self) -> Mat4 {
-        let names = ["右手首", "右腕", "right_hand", "RightHand"];
-        for name in &names {
-            if let Some(idx) = self.bone_manager.find_bone_by_name(name) {
-                return self.bone_manager.get_global_transform(idx);
-            }
-        }
-        Mat4::IDENTITY
+        self.hand_global(&Self::RIGHT_HAND_NAMES)
+            .map(|m| m * Mat4::from_quat(self.hand_rest_inverse[0]))
+            .unwrap_or(Mat4::IDENTITY)
     }
 
     /// 获取左手矩阵
     pub fn get_left_hand_matrix(&self) -> Mat4 {
-        let names = ["左手首", "左腕", "left_hand", "LeftHand"];
-        for name in &names {
-            if let Some(idx) = self.bone_manager.find_bone_by_name(name) {
-                return self.bone_manager.get_global_transform(idx);
-            }
-        }
-        Mat4::IDENTITY
+        self.hand_global(&Self::LEFT_HAND_NAMES)
+            .map(|m| m * Mat4::from_quat(self.hand_rest_inverse[1]))
+            .unwrap_or(Mat4::IDENTITY)
     }
 
     /// 获取更新后的顶点位置数据指针

@@ -134,6 +134,7 @@ public final class SubmitModelInstance extends BaseModelInstance {
 
         textureKeys = new ArrayList<>();
         materials = loadMaterials(port, modelHandle, textureKeys);
+        applyCardSettings(port, modelHandle);
 
         hasUvMorph = port.getUvMorphCount(modelHandle) > 0;
 
@@ -205,6 +206,25 @@ public final class SubmitModelInstance extends BaseModelInstance {
             result[i] = material;
         }
         return result;
+    }
+
+    /** A model from a PNG card carries its own size and per-material colour tints. */
+    private void applyCardSettings(NativeRenderBackendPort port, long modelHandle) {
+        var settings = com.shiroha.mmdskin.asset.catalog.ModelCardFile.readSettings(
+                modelDir == null ? null : java.nio.file.Path.of(modelDir));
+        cardScale = settings.scale();
+        if (settings.materialTints().isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < materials.length; i++) {
+            float[] tint = settings.materialTints().get(port.getMaterialName(modelHandle, i));
+            if (tint != null) {
+                // Vertex colour can only darken a texture, so tints above 1 are clamped.
+                materials[i].red = clamp01(materials[i].red * tint[0]);
+                materials[i].green = clamp01(materials[i].green * tint[1]);
+                materials[i].blue = clamp01(materials[i].blue * tint[2]);
+            }
+        }
     }
 
     private static float clamp01(float value) {

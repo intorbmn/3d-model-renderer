@@ -15,6 +15,11 @@ public class DefaultModelSelectionGateway implements ModelSelectionGateway {
     }
 
     @Override
+    public boolean isCardModel(String modelName) {
+        return ModelCatalogEntry.isCardKey(modelName);
+    }
+
+    @Override
     public void refreshModelCatalog() {
         ModelCatalogEntry.invalidateCache();
     }

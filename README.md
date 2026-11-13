@@ -41,6 +41,7 @@ Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 
 ```
 .minecraft/3d-skin/
+├── Cards/                   model cards (.png) made with 3D Model Renderer Studio
 ├── EntityPlayer/
 │   ├── Miku/
 │   │   ├── model.pmx        (or .pmd, .vrm, .glb, .gltf)
@@ -55,6 +56,12 @@ Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 In game, hold **left Alt** to open the wheel menu, choose **Model Switch**, then pick the model folder.
 
 The original documentation (in Chinese) covers the folder layout, animation load order and per-model settings in detail: [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Most of it still applies, except the parts about Forge and Minecraft 1.20.1.
+
+### Model cards
+
+A model card is a single PNG: the picture is the character, and the whole model (mesh, textures, size and colour settings) is packed behind it, like a Koikatsu card. Make cards with [3D Model Renderer Studio](https://github.com/intorbmn/3d-model-renderer-studio), which runs in the browser, previews the model with the mod's motions and takes the same model types as the mod. Drop the `.png` into `3d-skin/Cards/`. Cards are listed first in the model selector, highlighted with a **CARD** badge; plain model folders keep working as before.
+
+Koikatsu cards hold settings for that game's character maker, not a 3D model, so the mod cannot load them. Export the character to PMX with the KKBP exporter and turn the PMX into a card in the studio.
 
 ### GLB/glTF models and animation
 

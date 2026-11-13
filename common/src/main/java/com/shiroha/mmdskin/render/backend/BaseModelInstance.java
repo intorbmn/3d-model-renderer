@@ -213,8 +213,11 @@ public abstract class BaseModelInstance implements ModelInstance {
         return baseAlpha * mulAlpha + addAlpha;
     }
 
+    /** Size multiplier stored in a model card (1 for plain model folders). */
+    protected float cardScale = 1.0f;
+
     protected float getModelScale() {
-        return MODEL_SCALE * com.shiroha.mmdskin.config.ModelConfigManager.getConfig(getModelName()).modelScale;
+        return MODEL_SCALE * cardScale * com.shiroha.mmdskin.config.ModelConfigManager.getConfig(getModelName()).modelScale;
     }
 
     protected void disposeModelHandle() {

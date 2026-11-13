@@ -40,6 +40,7 @@ final class MmdClientResourceBootstrap {
 
     private static void ensureEntityPlayerDirectory() {
         PathConstants.ensureDirectoryExists(PathConstants.getEntityPlayerDir());
+        PathConstants.ensureDirectoryExists(PathConstants.getCardDir());
         PathConstants.ensureDirectoryExists(PathConstants.getCustomAnimDir());
         PathConstants.ensureDirectoryExists(PathConstants.getCustomMorphDir());
         PathConstants.ensureDirectoryExists(PathConstants.getDefaultMorphDir());
