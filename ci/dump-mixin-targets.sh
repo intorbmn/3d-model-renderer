@@ -95,3 +95,13 @@ code net.minecraft.client.renderer.rendertype.RenderTypes 'entityCutout[(]|entit
 code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities[(]' 120
 echo "##### classes: light / gui entity / pip"
 unzip -Z1 "$JAR" | grep -E '(LightCoords|LightTexture|Lightmap|GuiEntity|PictureInPicture|InventoryScreen)[A-Za-z$]*\.class$' | head -30
+
+# --- Texture sampling (filtering of runtime model textures) -----------------------------------
+code net.minecraft.client.renderer.texture.DynamicTexture 'DynamicTexture[(]|void upload[(]' 60
+code net.minecraft.client.renderer.texture.AbstractTexture '.' 40
+dump com.mojang.renderpearl.api.textures.GpuSampler 30
+dump com.mojang.blaze3d.systems.SamplerCache 30
+dump com.mojang.renderpearl.api.textures.FilterMode 20
+dump com.mojang.renderpearl.api.textures.AddressMode 20
+echo "##### classes: sampler"
+unzip -Z1 "$JAR" | grep -E '(Sampler|FilterMode|AddressMode)[A-Za-z$]*\.class$' | head -20
