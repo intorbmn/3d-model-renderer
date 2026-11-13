@@ -1,4 +1,4 @@
-name: MPR Fabric 26.3 Java compile check
+name: CI (Fabric 26.3)
 
 on:
   push:
@@ -194,7 +194,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mpr-fabric-26.3-compile-reports
+          name: fabric-26.3-compile-reports
           path: |
             common/build/reports/**
             fabric/build/reports/**

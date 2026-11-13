@@ -1,4 +1,4 @@
-name: MPR Rust JNI smoke test
+name: Rust JNI smoke test
 
 on:
   push:

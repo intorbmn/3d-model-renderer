@@ -15,11 +15,6 @@ bin/
 /fabric/bin/
 /fabric/run/
 
-/forge/build/
-/forge/.gradle/
-/forge/bin/
-/forge/run/
-
 run/
 logs/
 *.log

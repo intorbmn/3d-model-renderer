@@ -1,11 +1,11 @@
-# MPR porting plan: Minecraft 26.3 + Fabric
+# Porting plan: Minecraft 26.3 + Fabric
 
-## Baseline and branch safety
+## Branches
 
-- Stable baseline: `ci/rebuild-baseline`.
-- Port branch: `port/mc-26.3`.
-- The baseline is Minecraft 1.20.1 / Java 17 / Architectury Loom 1.7.435 / Gradle 8.8.
-- Do not make porting changes on `ci/rebuild-baseline` or `1.20-vr`.
+- `main` is the only development branch and targets Minecraft 26.3 Fabric.
+- `ci-reports` is written by CI (`ci/publish-report.sh`); do not commit to it by hand.
+- The 1.20.1 / 1.21.x code of the upstream project is not kept in this repository. It is available
+  from the upstream repository, https://github.com/shiroha-233/MC-MMD-rust.
 
 ## Target toolchain
 
@@ -61,7 +61,7 @@ Test keyboard input, mouse buttons, cursor position, scroll input, window focus,
 
 ## Runtime validation checklist
 
-- Launch a clean 26.3 Fabric client with only MPR and required dependencies.
+- Launch a clean 26.3 Fabric client with only this mod and its required dependencies.
 - Verify vanilla player-rendering fallback before enabling MMD replacement.
 - Test local and remote players.
 - Test first-person and third-person cameras.
@@ -81,8 +81,13 @@ A successful Gradle build does not prove runtime compatibility or multiplayer sy
 
 ## Current implementation status (2026-11-13)
 
-- The branch is configured for Java 25, Gradle 9.8.2, Minecraft 26.3, Fabric Loader 0.20.1, Fabric API 0.166.0+26.3, and Fabric Loom 1.19-SNAPSHOT.
-- The build no longer depends on Architectury API.
-- The dedicated workflow `.github/workflows/ci-fabric-26-3.yml` is intended to build `:fabric:build` with Java 25 and recursively checked-out Rust submodules.
-- The independent JNI workflow is configured separately; do not mark JNI verified until its run succeeds.
-- This is build-infrastructure and porting work only. No runtime compatibility claim is made here.
+- Java compiles against Minecraft 26.3 and every Mixin target validates (`ci/mixin-check`).
+- Models are drawn by `render/backend/submit/SubmitModelInstance`: the native engine skins on the CPU
+  and each material is submitted to the vanilla entity render types. The old OpenGL CPU/GPU skinning
+  backends stay excluded from compilation.
+- Textures are registered with Minecraft's `TextureManager`; there are no direct OpenGL texture calls.
+- Players and mob replacement share one hook on `LivingEntityRenderer#submit`.
+- Plain glTF/GLB files without VRM metadata load through the VRM path.
+- In-game testing by the maintainer: PMX models render; at least one Sketchfab GLB renders with black
+  areas and a wrong orientation.
+- Not ported yet: first-person hands (`ItemInHandRendererMixin`), Touhou Little Maid, Vivecraft, Iris.
