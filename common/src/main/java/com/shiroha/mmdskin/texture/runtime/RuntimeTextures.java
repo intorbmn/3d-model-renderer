@@ -1,7 +1,10 @@
 package com.shiroha.mmdskin.texture.runtime;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.renderpearl.api.textures.FilterMode;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -20,9 +23,20 @@ public final class RuntimeTextures {
     static Identifier register(NativeImage image) {
         long id = NEXT_ID.incrementAndGet();
         Identifier location = Identifier.fromNamespaceAndPath(NAMESPACE, "runtime/texture_" + id);
-        DynamicTexture texture = new DynamicTexture(() -> "mmdskin runtime texture " + id, image);
+        DynamicTexture texture = new ModelTexture(() -> "mmdskin runtime texture " + id, image);
         Minecraft.getInstance().getTextureManager().register(location, texture);
         return location;
+    }
+
+    /**
+     * A model texture: UVs of MMD/glTF models routinely leave the 0..1 range and expect the texture to
+     * repeat, and the textures are meant to be sampled smoothly rather than pixelated.
+     */
+    private static final class ModelTexture extends DynamicTexture {
+        ModelTexture(Supplier<String> label, NativeImage image) {
+            super(label, image);
+            this.sampler = RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR);
+        }
     }
 
     static void release(Identifier location) {

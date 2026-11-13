@@ -58,7 +58,6 @@ find_callers 'isDetached'
 find_callers 'crosshairPickEntity'
 find_callers 'mulPose'
 
-rm -rf "$WORK"
 
 # --- Bytecode of the methods the camera mixin injects into (verifies call order / partialTick) --
 code() {
@@ -105,3 +104,16 @@ dump com.mojang.renderpearl.api.textures.FilterMode 20
 dump com.mojang.renderpearl.api.textures.AddressMode 20
 echo "##### classes: sampler"
 unzip -Z1 "$JAR" | grep -E '(Sampler|FilterMode|AddressMode)[A-Za-z$]*\.class$' | head -20
+
+# --- First-person hands (methods only; the class has ~60 constants before them) ----------------
+echo "##### [javap -p methods] net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer"
+javap -p -cp "$CP" net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer 2>&1 | grep '(' | cut -c1-330
+dump net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState 40
+dump 'net.minecraft.client.renderer.state.level.FirstPersonHandsAndItemsRenderState$HandRenderSelection' 20
+code net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer 'void submit|void extract|void render' 80
+code net.minecraft.client.renderer.texture.AbstractTexture 'AbstractTexture[(][)]' 20
+echo "##### AbstractTexture default sampler arguments"
+javap -p -c -cp "$CP" net.minecraft.client.renderer.texture.AbstractTexture 2>/dev/null | sed -n '/AbstractTexture();/,/return/p' | cut -c1-200
+find_callers 'FirstPersonHandsAndItemsRenderer'
+
+rm -rf "$WORK"
