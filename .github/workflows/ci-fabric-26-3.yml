@@ -36,6 +36,33 @@ jobs:
       - name: Compile Java modules without building Rust
         run: ./gradlew :common:compileJava :fabric:compileJava --no-daemon -x prepareNativeResources -x buildRustNative --stacktrace
 
+      # Compiling never checks Mixin string targets ("method = ...", "target = ..."), so a
+      # green compile can still crash at game start. This checks them against the real jar.
+      - name: Mixin validator self-test
+        if: always()
+        run: ci/mixin-check/selftest.sh
+
+      - name: Validate Mixin targets against the Minecraft 26.3 jar
+        if: always()
+        run: |
+          JAR=$(find "$HOME/.gradle" -type f -name 'minecraft-merged*.jar' ! -name '*sources*' | head -1)
+          if [ -z "$JAR" ]; then echo "Minecraft jar not found; the compile step did not resolve it"; exit 1; fi
+          echo "Using $JAR"
+          LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
+          python3 ci/mixin-check/check_mixins.py \
+            --src fabric/src/main/java \
+            --mixins-json fabric/src/main/resources/mmdskin-fabric.mixins.json \
+            --classpath "$JAR:$LIBS" \
+            --summary "$GITHUB_STEP_SUMMARY" --quiet-ok
+
+      - name: Render API for the submit-based backend (readable in the run summary)
+        if: always()
+        run: |
+          JAR=$(find "$HOME/.gradle" -type f -name 'minecraft-merged*.jar' ! -name '*sources*' | head -1)
+          [ -n "$JAR" ] || { echo "Minecraft jar not found"; exit 0; }
+          LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
+          { echo "## Minecraft 26.3 render API"; echo; ci/dump-render-api.sh "$JAR" "$LIBS"; } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Inspect Minecraft 26.3 API (diagnostic)
         if: always()
         run: |
