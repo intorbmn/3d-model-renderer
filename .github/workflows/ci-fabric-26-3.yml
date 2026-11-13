@@ -85,31 +85,35 @@ jobs:
           echo "##### classes named like Renderer for players / vertex format / item use"
           unzip -Z1 "$JAR" | grep -E '(PlayerRenderer|AvatarRenderer|VertexFormat|ItemUseAnimation|UseAnim|ResourceLocation|Identifier)\.class$' | head -20
 
-      - name: Look up renamed Minecraft 26.3 members (diagnostic)
+      - name: Look up renamed Minecraft and Fabric API members (diagnostic)
         if: always()
         run: |
           set +e
           JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
+          FJARS=$(find $HOME/.gradle -type f -name 'fabric-*.jar' ! -name '*sources*' ! -name '*loom*' 2>/dev/null)
+          FCP=$(echo "$FJARS" | paste -sd:)
           show() {
             echo "##### $1  /$2/"
-            javap ${4:--public} -cp "$JAR" "$1" 2>&1 | grep -E "$2" | cut -c1-230 | head -${3:-60}
+            javap ${4:--public} -cp "$JAR:$FCP" "$1" 2>&1 | grep -E "$2" | cut -c1-230 | head -${3:-60}
           }
           full() {
             echo "##### $1 (full)"
-            javap -public -cp "$JAR" "$1" 2>&1 | cut -c1-230 | head -${2:-80}
+            javap ${3:--public} -cp "$JAR:$FCP" "$1" 2>&1 | cut -c1-230 | head -${2:-80}
           }
-          echo "##### jar entries: EntityType and horse-like entities"
-          unzip -Z1 "$JAR" | grep -E 'world/entity/EntityType[A-Za-z$]*\.class$|world/entity/animal/.*(Horse|Donkey|Mule|Camel|Llama)[A-Za-z$]*\.class$' | head -40
-          full net.minecraft.world.entity.EntityType 45
-          show net.minecraft.world.entity.EntityType 'static final' 25
-          full net.minecraft.world.entity.LivingEntity\$SwingDescription 30
-          show net.minecraft.world.entity.LivingEntity 'wing' 30 -protected
-          full net.minecraft.client.gui.Hud 70
-          full net.minecraft.client.gui.components.debug.DebugScreenEntryList 45
-          show net.minecraft.client.gui.screens.inventory.AbstractContainerScreen 'leftPos|topPos|imageWidth|imageHeight|getRectangle|getGuiLeft|getGuiTop' 20 -protected
-          show net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen 'ecipe' 20 -protected
-          full net.minecraft.client.renderer.entity.state.EntityRenderState 40
-          show net.minecraft.client.renderer.texture.OverlayTexture 'NO_OVERLAY' 5
+          echo "##### fabric api module jars"
+          echo "$FJARS" | sed 's#.*/##' | sort -u | head -80
+          echo "##### fabric api classes of interest"
+          for j in $FJARS; do unzip -Z1 "$j" 2>/dev/null | grep -E '(KeyBind|KeyMapping|HudElement|HudRender|PayloadTypeRegistry|ClientPlayNetworking|ServerPlayNetworking|EntityRendererRegistry|EntityRenderers)[A-Za-z$]*\.class$'; done | sort -u | head -50 | tee /tmp/fapi-classes.txt
+          for c in $(sed -e 's#\.class$##' -e 's#/#.#g' /tmp/fapi-classes.txt | grep -vE '\$' | head -16); do
+            full "$c" 45
+          done
+          show net.minecraft.client.multiplayer.MultiPlayerGameMode 'ange|ick|Reach' 12
+          full net.minecraft.world.entity.player.Input 25
+          show net.minecraft.client.player.ClientInput '.' 20 -protected
+          show net.minecraft.core.registries.BuiltInRegistries 'ENTITY_TYPE' 5
+          show net.minecraft.core.Registry 'getOptional|containsKey|getValue|get\(' 12
+          full me.shedaniel.clothconfig2.api.AbstractConfigListEntry 45
+          show net.minecraft.client.gui.components.AbstractWidget 'xtract|render' 12
 
       - name: Upload compile reports
         if: always()

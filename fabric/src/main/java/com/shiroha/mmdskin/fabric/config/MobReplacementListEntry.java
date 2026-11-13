@@ -52,11 +52,11 @@ final class MobReplacementListEntry extends AbstractConfigListEntry<String> {
     }
 
     private void openPicker() {
-        Screen parent = Minecraft.getInstance().screen;
+        Screen parent = Minecraft.getInstance().gui.screen();
         if (parent == null) {
             return;
         }
-        Minecraft.getInstance().setScreen(new MobReplacementModelPickerScreen(parent, target, value, this::setValue));
+        Minecraft.getInstance().gui.setScreen(new MobReplacementModelPickerScreen(parent, target, value, this::setValue));
     }
 
     private void setValue(String value) {

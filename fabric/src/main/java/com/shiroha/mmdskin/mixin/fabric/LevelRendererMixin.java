@@ -26,7 +26,7 @@ public abstract class LevelRendererMixin {
             return camera.isDetached();
         }
 
-        Entity entity = camera.getEntity();
+        Entity entity = camera.entity();
         if (!(entity instanceof AbstractClientPlayer player)) {
             return camera.isDetached();
         }
@@ -50,12 +50,12 @@ public abstract class LevelRendererMixin {
 
             if (YsmCompat.isYsmModelActive(player)) {
                 if (YsmCompat.isDisableSelfModel()) {
-                    return camera.getXRot() >= 0;
+                    return camera.xRot() >= 0;
                 }
                 return false;
             }
 
-            return camera.getXRot() >= 0;
+            return camera.xRot() >= 0;
         }
 
         return camera.isDetached();

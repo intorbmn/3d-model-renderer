@@ -125,6 +125,13 @@ sourceSets {
     main {
         java {
             exclude "**/EntityMaidRendererMixin.java" // optional Maid compatibility deferred for 26.3
+            // Entity/player/item render hooks target classes that 26.3 removed or reworked
+            // (PlayerRenderer, ItemInHandRenderer, LivingEntityRenderer.render). They are deferred
+            // together with the render backend and are not listed in mmdskin-fabric.mixins.json.
+            exclude "**/FabricPlayerRendererMixin.java"
+            exclude "**/ItemInHandRendererMixin.java"
+            exclude "**/MobReplacementLivingEntityRendererMixin.java"
+            exclude "**/VivecraftVRPlayerRendererMixin.java"
         }
         resources {
             exclude 'assets/mmdskin/lang/*.json'

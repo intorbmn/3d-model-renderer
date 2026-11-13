@@ -67,17 +67,17 @@ final class FabricClientRuntimeHooks {
             }
         }
 
-        if (minecraft.screen == null || minecraft.screen instanceof ConfigWheelScreen) {
+        if (minecraft.gui.screen() == null || minecraft.gui.screen() instanceof ConfigWheelScreen) {
             boolean keyDown = keyConfigWheel.isDown();
             if (keyDown && !configWheelKeyWasDown) {
-                minecraft.setScreen(new ConfigWheelScreen(keyConfigWheel));
+                minecraft.gui.setScreen(new ConfigWheelScreen(keyConfigWheel));
             }
             configWheelKeyWasDown = keyDown;
         } else {
             configWheelKeyWasDown = false;
         }
 
-        if (minecraft.screen == null) {
+        if (minecraft.gui.screen() == null) {
             for (int i = 0; i < keyQuickModels.length; i++) {
                 while (keyQuickModels[i].consumeClick()) {
                     QuickModelSwitcher.switchToSlot(i);
@@ -86,7 +86,7 @@ final class FabricClientRuntimeHooks {
         }
 
         if (MaidCompatMixinPlugin.isMaidModLoaded()) {
-            if (minecraft.screen == null || minecraft.screen instanceof MaidConfigWheelScreen) {
+            if (minecraft.gui.screen() == null || minecraft.gui.screen() instanceof MaidConfigWheelScreen) {
                 boolean keyDown = keyMaidConfigWheel.isDown();
                 if (keyDown && !maidConfigWheelKeyWasDown) {
                     tryOpenMaidConfigWheel(minecraft);
@@ -128,7 +128,7 @@ final class FabricClientRuntimeHooks {
         String className = target.getClass().getName();
         if (className.contains("EntityMaid") || className.contains("touhoulittlemaid")) {
             String maidName = target.getName().getString();
-            minecraft.setScreen(new MaidConfigWheelScreen(target.getUUID(), target.getId(), maidName, keyMaidConfigWheel));
+            minecraft.gui.setScreen(new MaidConfigWheelScreen(target.getUUID(), target.getId(), maidName, keyMaidConfigWheel));
         }
     }
 }

@@ -50,7 +50,7 @@ public abstract class GameRendererMixin {
         if (controller.isActive()) {
             float roll = controller.getCameraRoll();
             if (roll != 0.0f) {
-                poseStack.mulPose(new Quaternionf().rotationZ(roll));
+                poseStack.rotate(new Quaternionf().rotationZ(roll));
             }
         }
     }
@@ -63,12 +63,12 @@ public abstract class GameRendererMixin {
             return;
         }
 
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        Vec3 cameraPos = mc.gameRenderer.mainCamera().position();
         Vec3 viewDir = player.getViewVector(partialTick);
         if (viewDir.lengthSqr() < 1.0E-6) return;
 
         Vec3 vanillaEyePos = FirstPersonManager.getVanillaEyePosition(player, partialTick);
-        double blockRange = mc.gameMode != null ? (double) mc.gameMode.getPickRange() : 4.5;
+        double blockRange = player.blockInteractionRange();
         double entityRange = player.isCreative() ? 6.0 : 3.0;
         HitResult missHit = player.pick(0.0D, partialTick, false);
         HitResult blockHit = player.pick(blockRange, partialTick, false);
