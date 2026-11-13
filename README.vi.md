@@ -18,7 +18,7 @@ Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng mode
 |---|---|
 | Minecraft 26.3, Fabric | Biên dịch và chạy được |
 | Model PMX/PMD | Hiển thị được |
-| Model GLB/glTF không có VRM | Nạp được; một số model hiển thị lỗi |
+| Model GLB/glTF thường | Nạp được; có animation nếu nhận diện được bộ xương (xem bên dưới) |
 | Góc nhìn thứ nhất (ẩn tay gốc) | Đã port, cần test trong game |
 | Viền toon (outline) | Đã port, cần test trong game |
 | Tô bóng toon, GPU skinning | Chưa port |
@@ -43,7 +43,7 @@ Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/Enti
 .minecraft/3d-skin/
 ├── EntityPlayer/
 │   ├── Miku/
-│   │   ├── model.pmx        (hoặc .pmd, .vrm, .glb)
+│   │   ├── model.pmx        (hoặc .pmd, .vrm, .glb, .gltf)
 │   │   └── ...              (các file texture mà model dùng, giữ đúng đường dẫn)
 │   └── ...
 ├── DefaultAnim/             animation mặc định (.vmd)
@@ -55,6 +55,28 @@ Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/Enti
 Trong game, giữ **Alt trái** để mở vòng menu, chọn **Model Switch** rồi chọn thư mục model.
 
 Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animation và cấu hình theo từng model nằm trong tài liệu gốc (tiếng Trung): [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Phần lớn vẫn đúng với bản này, trừ các mục về Forge và Minecraft 1.20.1.
+
+### Model GLB/glTF và animation
+
+Animation của mod điều khiển xương theo tên chuẩn MMD. Với file GLB/glTF thường, mod tự nhận diện bộ xương người theo tên xương của các quy ước phổ biến: VRM/Unity (`LeftUpperLeg`), VRoid (`J_Bip_L_UpperLeg`), Mixamo (`mixamorig:LeftUpLeg`), Cats Blender Plugin (`Left leg`), Blender (`upper_leg.L`), Unreal (`thigh_l`). Nhận diện được thì model dùng được animation mặc định; không thì model đứng yên.
+
+Nếu mod nhận diện sai hoặc không nhận ra, đặt file `bones.json` cạnh file model, ánh xạ tên humanoid của VRM sang tên xương trong file:
+
+```json
+{ "hips": "Pelvis", "spine": "Spine1", "head": "Head",
+  "leftUpperArm": "L_Arm", "leftLowerArm": "L_Elbow", "leftHand": "L_Wrist",
+  "leftUpperLeg": "L_Thigh", "leftLowerLeg": "L_Knee", "leftFoot": "L_Ankle" }
+```
+
+Cần đủ 15 xương chính: `hips`, `spine`, `head`, và `UpperArm`, `LowerArm`, `Hand`, `UpperLeg`, `LowerLeg`, `Foot` cho cả `left` lẫn `right`.
+
+### Xuất model từ Blender
+
+```bash
+blender --background model.blend --python tools/blender/export_glb.py -- output.glb
+```
+
+Script xuất armature cùng các lưới ra GLB và dựng lại material về dạng Principled BSDF, vì trình xuất glTF của Blender bỏ mất texture của material kiểu VRM/MToon.
 
 ## Phím tắt
 

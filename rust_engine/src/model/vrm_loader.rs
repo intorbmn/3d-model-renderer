@@ -231,6 +231,28 @@ pub fn load_vrm<P: AsRef<Path>>(path: P) -> Result<MmdModel> {
     load_vrm_with_extensions(path).map(|loaded| loaded.model)
 }
 
+/// Reports which bones of a plain glTF/GLB would be treated as which VRM humanoid bones, as
+/// `(humanoid name, bone name in the file)` pairs sorted by humanoid name. Empty when the rig is not
+/// recognised. Lets tools show (and tests check) the mapping without loading the whole model.
+pub fn describe_gltf_humanoid<P: AsRef<Path>>(path: P) -> Result<Vec<(String, String)>> {
+    let path = path.as_ref();
+    let gltf = gltf::Gltf::open(path).map_err(|e| MmdError::VrmParse(format!("glTF 加载失败: {}", e)))?;
+    let Some(skin) = gltf.document.skins().next() else {
+        return Ok(Vec::new());
+    };
+    let joints: Vec<(usize, String)> = skin
+        .joints()
+        .map(|node| (node.index(), node.name().unwrap_or("").to_string()))
+        .collect();
+    let mapping = super::humanoid_inference::resolve_humanoid(path, &joints);
+    let mut described: Vec<(String, String)> = joints
+        .into_iter()
+        .filter_map(|(node, bone)| mapping.get(&node).map(|humanoid| (humanoid.clone(), bone)))
+        .collect();
+    described.sort();
+    Ok(described)
+}
+
 /// Loads a VRM model and returns both the runtime model and parsed VRM metadata.
 pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmModel> {
     let path = path.as_ref();
@@ -273,6 +295,16 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
         .skins()
         .next()
         .ok_or_else(|| MmdError::VrmParse("glTF/VRM 缺少 skin 数据（仅支持带骨骼蒙皮的模型）".into()))?;
+    // A plain glTF has no humanoid description; recover one from bones.json or the bone names so
+    // that VMD motions (which drive MMD bone names) can animate it.
+    let mut vrm_ext = vrm_ext;
+    if is_generic_gltf {
+        let joints: Vec<(usize, String)> = skin
+            .joints()
+            .map(|node| (node.index(), node.name().unwrap_or("").to_string()))
+            .collect();
+        vrm_ext.humanoid.map = super::humanoid_inference::resolve_humanoid(path, &joints);
+    }
     let bone_manager =
         vrm_skeleton::build_skeleton(
             &document,

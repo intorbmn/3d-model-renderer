@@ -79,10 +79,10 @@ public final class SceneModelCatalog {
     private ModelCatalogEntry scanFolder(File dir) {
         FileFilter pmxFilter = file -> file.isFile() && file.getName().toLowerCase().endsWith(".pmx");
         FileFilter pmdFilter = file -> file.isFile() && file.getName().toLowerCase().endsWith(".pmd");
-        // .glb is loaded through the same glTF path as .vrm; a plain GLB simply has no VRM metadata.
+        // .glb and .gltf are loaded through the same glTF path as .vrm; a plain glTF simply has no VRM metadata.
         FileFilter vrmFilter = file -> {
             String name = file.getName().toLowerCase();
-            return file.isFile() && (name.endsWith(".vrm") || name.endsWith(".glb"));
+            return file.isFile() && (name.endsWith(".vrm") || name.endsWith(".glb") || name.endsWith(".gltf"));
         };
 
         File[] pmxFiles = dir.listFiles(pmxFilter);

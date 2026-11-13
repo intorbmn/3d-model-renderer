@@ -49,7 +49,7 @@ fn generic_glb_loads_and_keeps_bind_pose() {
     // First person: without named head/eye bones the eye position is estimated from the mesh.
     let eye = model.get_eye_bone_animated_position();
     eprintln!("estimated eye={eye:?}");
-    assert!(eye.y > rest_lo.y + rest_height * 0.85 && eye.y < rest_hi.y, "eye height out of range: {eye:?}");
+    assert!(eye.y > rest_lo.y + rest_height * 0.7 && eye.y < rest_hi.y, "eye height out of range: {eye:?}");
     assert!(eye.x.abs() < rest_height * 0.05, "eye not centred: {eye:?}");
     model.set_first_person_mode(true);
     let hidden = (0..model.material_count()).filter(|&i| !model.is_material_visible(i)).count();

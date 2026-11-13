@@ -6,6 +6,7 @@ mod runtime;
 mod submesh;
 
 mod bone_mapping;
+mod humanoid_inference;
 mod vrm_extensions;
 mod vrm_loader;
 mod vrm_material;
@@ -24,7 +25,7 @@ pub use vrm_extensions::{
     SpringBoneData, SpringBoneJoint, SpringBoneSpring, VrmExpressionClip, VrmExpressions,
     VrmExtensions, VrmVersion,
 };
-pub use vrm_loader::{load_vrm, load_vrm_with_extensions, LoadedVrmModel};
+pub use vrm_loader::{describe_gltf_humanoid, load_vrm, load_vrm_with_extensions, LoadedVrmModel};
 pub(crate) use vrm_morph::vrm_expression_to_mmd;
 
 use glam::{Vec2, Vec3};

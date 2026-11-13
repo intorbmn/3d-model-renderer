@@ -18,7 +18,7 @@ In development; there is no official release yet.
 |---|---|
 | Minecraft 26.3, Fabric | Builds and runs |
 | PMX/PMD models | Render |
-| GLB/glTF models without VRM data | Load; some models render incorrectly |
+| Plain GLB/glTF models | Load; animated when the skeleton is recognised (see below) |
 | First-person view (vanilla hands hidden) | Ported, needs in-game testing |
 | Toon outline | Ported, needs in-game testing |
 | Toon shading, GPU skinning | Not ported yet |
@@ -43,7 +43,7 @@ Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 .minecraft/3d-skin/
 ├── EntityPlayer/
 │   ├── Miku/
-│   │   ├── model.pmx        (or .pmd, .vrm, .glb)
+│   │   ├── model.pmx        (or .pmd, .vrm, .glb, .gltf)
 │   │   └── ...              (the texture files the model uses, at the paths it expects)
 │   └── ...
 ├── DefaultAnim/             default animations (.vmd)
@@ -55,6 +55,28 @@ Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 In game, hold **left Alt** to open the wheel menu, choose **Model Switch**, then pick the model folder.
 
 The original documentation (in Chinese) covers the folder layout, animation load order and per-model settings in detail: [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Most of it still applies, except the parts about Forge and Minecraft 1.20.1.
+
+### GLB/glTF models and animation
+
+The mod's motions drive bones by their standard MMD names. For a plain GLB/glTF the mod recognises a humanoid skeleton from the bone names of the common conventions: VRM/Unity (`LeftUpperLeg`), VRoid (`J_Bip_L_UpperLeg`), Mixamo (`mixamorig:LeftUpLeg`), Cats Blender Plugin (`Left leg`), Blender (`upper_leg.L`), Unreal (`thigh_l`). A recognised model uses the default motions; otherwise it stands still.
+
+If the skeleton is recognised wrongly or not at all, put a `bones.json` next to the model file, mapping VRM humanoid bone names to the bone names in the file:
+
+```json
+{ "hips": "Pelvis", "spine": "Spine1", "head": "Head",
+  "leftUpperArm": "L_Arm", "leftLowerArm": "L_Elbow", "leftHand": "L_Wrist",
+  "leftUpperLeg": "L_Thigh", "leftLowerLeg": "L_Knee", "leftFoot": "L_Ankle" }
+```
+
+All 15 core bones are required: `hips`, `spine`, `head`, and `UpperArm`, `LowerArm`, `Hand`, `UpperLeg`, `LowerLeg`, `Foot` for both `left` and `right`.
+
+### Exporting from Blender
+
+```bash
+blender --background model.blend --python tools/blender/export_glb.py -- output.glb
+```
+
+The script exports the armature and its meshes to GLB and rebuilds the materials as Principled BSDF, because Blender's glTF exporter drops the textures of VRM/MToon-style materials.
 
 ## Key bindings
 
