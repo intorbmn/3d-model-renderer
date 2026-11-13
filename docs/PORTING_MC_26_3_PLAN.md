@@ -2,7 +2,7 @@
 
 ## Branches
 
-- `main` is the only development branch and targets Minecraft 26.3 Fabric.
+- `Fabric-26.3` is the only (and default) development branch and targets Minecraft 26.3 Fabric.
 - `ci-reports` is written by CI (`ci/publish-report.sh`); do not commit to it by hand.
 - The 1.20.1 / 1.21.x code of the upstream project is not kept in this repository. It is available
   from the upstream repository, https://github.com/shiroha-233/MC-MMD-rust.

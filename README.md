@@ -1,66 +1,68 @@
 # 3D Model Renderer
 
-Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng model 3D (MMD PMX/PMD, VRM, glTF/GLB), có animation VMD và vật lý.
+**English** | [Tiếng Việt](README.vi.md)
 
-> **Fork từ MMD Skin.** Dự án này được fork từ [MMD Skin (MC-MMD-rust)](https://github.com/shiroha-233/MC-MMD-rust) của shiroha.
-> Gần như toàn bộ engine và code mod đến từ bản gốc; repo này port sang Minecraft 26.3 Fabric và phát triển tiếp.
-> Xem phần [Nguồn gốc và ghi công](#nguồn-gốc-và-ghi-công).
+A Fabric mod for **Minecraft 26.3** that replaces players and mobs with 3D models (MMD PMX/PMD, VRM, glTF/GLB), with VMD animation and physics.
+
+> **Forked from MMD Skin.** This project is a fork of [MMD Skin (MC-MMD-rust)](https://github.com/shiroha-233/MC-MMD-rust) by shiroha.
+> Almost all of the engine and mod code comes from the original project; this repository ports it to Minecraft 26.3 Fabric and develops it further.
+> See [Origin and credits](#origin-and-credits).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Trạng thái
+## Status
 
-Đang phát triển, chưa có bản phát hành chính thức.
+In development; there is no official release yet.
 
-| Hạng mục | Trạng thái |
+| Area | Status |
 |---|---|
-| Minecraft 26.3, Fabric | Biên dịch và chạy được |
-| Model PMX/PMD | Hiển thị được |
-| Model GLB/glTF không có VRM | Nạp được; một số model hiển thị lỗi |
-| Tay ở góc nhìn thứ nhất | Chưa port |
-| Tương thích Touhou Little Maid, Vivecraft, Iris | Chưa port |
-| Forge / NeoForge, bản Minecraft cũ | Không hỗ trợ trong repo này |
+| Minecraft 26.3, Fabric | Builds and runs |
+| PMX/PMD models | Render |
+| GLB/glTF models without VRM data | Load; some models render incorrectly |
+| First-person hands | Not ported yet |
+| Touhou Little Maid, Vivecraft, Iris compatibility | Not ported yet |
+| Forge / NeoForge, older Minecraft versions | Not supported in this repository |
 
-## Cài đặt
+## Installation
 
-Yêu cầu: Minecraft 26.3, Fabric Loader 0.20.1+, Java 25, [Fabric API](https://modrinth.com/mod/fabric-api), [Cloth Config](https://modrinth.com/mod/cloth-config).
+Requirements: Minecraft 26.3, Fabric Loader 0.20.1+, Java 25, [Fabric API](https://modrinth.com/mod/fabric-api), [Cloth Config](https://modrinth.com/mod/cloth-config).
 
-1. Tải file jar từ mục **Artifacts** của lượt chạy mới nhất trong tab [Actions](https://github.com/intorbmn/3d-model-renderer/actions) (`3d-model-renderer-fabric-26.3-windows-x64` hoặc `linux-x64`).
-2. Bỏ jar vào thư mục `.minecraft/mods/`.
-3. Chạy game một lần, mod sẽ tạo thư mục `.minecraft/3d-skin/`.
+1. Download the jar from the **Artifacts** section of the latest run in the [Actions](https://github.com/intorbmn/3d-model-renderer/actions) tab (`3d-model-renderer-fabric-26.3-windows-x64` or `linux-x64`).
+2. Put the jar in `.minecraft/mods/`.
+3. Start the game once; the mod creates the `.minecraft/3d-skin/` folder.
 
-## Thêm model
+## Adding models
 
-Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/EntityPlayer/`:
+Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 
 ```
 .minecraft/3d-skin/
 ├── EntityPlayer/
 │   ├── Miku/
-│   │   ├── model.pmx        (hoặc .pmd, .vrm, .glb)
-│   │   └── ...              (các file texture mà model dùng, giữ đúng đường dẫn)
+│   │   ├── model.pmx        (or .pmd, .vrm, .glb)
+│   │   └── ...              (the texture files the model uses, at the paths it expects)
 │   └── ...
-├── DefaultAnim/             animation mặc định (.vmd)
-├── CustomAnim/              animation của bạn (.vmd)
-├── DefaultMorph/            biểu cảm mặc định (.vpd)
-└── CustomMorph/             biểu cảm của bạn (.vpd)
+├── DefaultAnim/             default animations (.vmd)
+├── CustomAnim/              your own animations (.vmd)
+├── DefaultMorph/            default expressions (.vpd)
+└── CustomMorph/             your own expressions (.vpd)
 ```
 
-Trong game, giữ **Alt trái** để mở vòng menu, chọn **Model Switch** rồi chọn thư mục model.
+In game, hold **left Alt** to open the wheel menu, choose **Model Switch**, then pick the model folder.
 
-Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animation và cấu hình theo từng model nằm trong tài liệu gốc (tiếng Trung): [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Phần lớn vẫn đúng với bản này, trừ các mục về Forge và Minecraft 1.20.1.
+The original documentation (in Chinese) covers the folder layout, animation load order and per-model settings in detail: [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Most of it still applies, except the parts about Forge and Minecraft 1.20.1.
 
-## Phím tắt
+## Key bindings
 
-| Phím | Chức năng |
+| Key | Action |
 |---|---|
-| Giữ `Alt` trái | Vòng menu chính: đổi model, chọn động tác, biểu cảm, material, cảnh, sân khấu, cài đặt |
+| Hold left `Alt` | Main wheel: switch model, actions, expressions, materials, scene, stage, settings |
 
-Có thể đổi phím trong mục *Controls* của game, nhóm **3D Model Renderer**.
+Keys can be changed in the game's *Controls* screen, under **3D Model Renderer**.
 
-## Build từ mã nguồn
+## Building from source
 
-Cần: JDK 25, Rust (stable), CMake và trình biên dịch C++ (cho Bullet3).
+Requires JDK 25, Rust (stable), CMake and a C++ compiler (for Bullet3).
 
 ```bash
 git clone --recursive https://github.com/intorbmn/3d-model-renderer
@@ -68,19 +70,19 @@ cd 3d-model-renderer
 ./gradlew :fabric:build
 ```
 
-File jar nằm ở `fabric/build/libs/`. Lệnh build sẽ tự build engine Rust trong `rust_engine/` và đóng gói thư viện native cho hệ điều hành đang dùng.
+The jar is written to `fabric/build/libs/`. The build compiles the Rust engine in `rust_engine/` and bundles the native library for the current operating system.
 
-Mod ID vẫn giữ là `mmdskin` để cấu hình, phím tắt và thư mục `3d-skin` của bản gốc tiếp tục dùng được.
+The mod ID remains `mmdskin`, so configs, key bindings and the `3d-skin` folder from the original mod keep working.
 
-## Nguồn gốc và ghi công
+## Origin and credits
 
-- **[MMD Skin (MC-MMD-rust)](https://github.com/shiroha-233/MC-MMD-rust)**, của shiroha233: dự án gốc mà repo này fork từ đó, gồm engine Rust, mod Minecraft và phần lớn tính năng.
-- **[KAIMyEntity](https://github.com/kjkjkAIStudio/KAIMyEntity)**, của kjkjkAIStudio và tarsin: mod MMD đầu tiên cho Minecraft.
-- **[KAIMyEntity-C](https://github.com/Gengorou-C/KAIMyEntity-C)**, của Gengorou-C: tiền thân trực tiếp của MMD Skin.
-- asuka-mio: người đóng góp cho MMD Skin.
+- **[MMD Skin (MC-MMD-rust)](https://github.com/shiroha-233/MC-MMD-rust)** by shiroha233: the project this repository is forked from, including the Rust engine, the Minecraft mod and most features.
+- **[KAIMyEntity](https://github.com/kjkjkAIStudio/KAIMyEntity)** by kjkjkAIStudio and tarsin: the first MMD mod for Minecraft.
+- **[KAIMyEntity-C](https://github.com/Gengorou-C/KAIMyEntity-C)** by Gengorou-C: the direct predecessor of MMD Skin.
+- asuka-mio: contributor to MMD Skin.
 
-Danh sách đầy đủ các thư viện và giấy phép: [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md), [NOTICE](NOTICE), [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+Full list of libraries and licenses: [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md), [NOTICE](NOTICE), [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
-## Giấy phép
+## License
 
-MIT, xem [LICENSE](LICENSE). Bản quyền của dự án gốc được giữ nguyên.
+MIT, see [LICENSE](LICENSE). The original project's copyright is retained.

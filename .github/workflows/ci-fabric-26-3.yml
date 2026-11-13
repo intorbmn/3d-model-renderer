@@ -3,12 +3,10 @@ name: CI (Fabric 26.3)
 on:
   push:
     branches:
-      - main
-      - 'port/**'
+      - Fabric-26.3
   pull_request:
     branches:
-      - main
-      - 'port/**'
+      - Fabric-26.3
   workflow_dispatch:
 
 permissions:

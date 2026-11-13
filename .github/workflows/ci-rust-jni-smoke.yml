@@ -3,8 +3,7 @@ name: Rust JNI smoke test
 on:
   push:
     branches:
-      - main
-      - 'port/**'
+      - Fabric-26.3
   workflow_dispatch:
 
 permissions:
