@@ -59,3 +59,16 @@ find_callers 'crosshairPickEntity'
 find_callers 'mulPose'
 
 rm -rf "$WORK"
+
+# --- Bytecode of the methods the camera mixin injects into (verifies call order / partialTick) --
+code() {
+  local cls="$1" pat="$2" max="${3:-120}"
+  echo "##### [javap -p -c] $cls :: $pat"
+  javap -p -c -cp "$CP" "$cls" 2>/dev/null | awk -v p="$pat" '
+    /^  [a-zA-Z].*\(.*\).*;$/ { on = ($0 ~ p) }
+    on { print }' | grep -E '^  [a-zA-Z]|invoke|putfield|getfield|return' | cut -c1-220 | head -"$max"
+}
+code net.minecraft.client.Camera 'void update\(|void alignWithEntity\(|float calculateFov\(|void extractRenderState\(' 200
+code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities\(' 80
+code net.minecraft.client.Minecraft 'void pick\(' 60
+dump net.minecraft.client.input.MouseButtonInfo 20

@@ -7,9 +7,8 @@
   "client": [
     "compat.VivecraftVRArmHelperMixin",
     "CameraMixin",
-    "GameRendererMixin",
     "KeyMappingAccessor",
-    "LevelRendererMixin",
+    "LevelExtractorMixin",
     "MinecraftMixin",
     "MouseHandlerMixin",
     "KeyboardInputMixin",
