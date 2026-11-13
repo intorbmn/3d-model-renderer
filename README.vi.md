@@ -61,7 +61,7 @@ Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animatio
 
 Card model là một file PNG: phần ảnh là nhân vật, phía sau gói toàn bộ model (lưới, texture, kích thước và màu), giống card Koikatsu. Tạo card bằng [3D Model Renderer Studio](https://github.com/intorbmn/3d-model-renderer-studio): chạy trên trình duyệt, xem trước model với các động tác của mod và nhận các loại model giống mod. Bỏ file `.png` vào `3d-skin/Cards/`. Card được xếp đầu danh sách chọn model và đánh dấu nổi bật bằng nhãn **CARD**; thư mục model thường vẫn dùng như cũ.
 
-Card Koikatsu chỉ chứa thông số cho trình tạo nhân vật của game đó, không có model 3D, nên mod không đọc được. Hãy xuất nhân vật ra PMX bằng KKBP exporter rồi biến file PMX thành card trong studio.
+Card luôn có vật lý: studio chia các chuỗi spring bone thành nhóm tóc, quần áo, cơ thể và tuỳ chỉnh; mod chạy các nhóm đó cho model VRM/GLB/glTF thay cho spring bone có sẵn của model (model PMX giữ vật lý rigid body của nó). Studio còn tạo được nhân vật từ cơ thể gốc, và đọc card ILLGAMES (Koikatsu, AI Shoujo, Honey Select 2, Honey Come…) lên cơ thể đó: các card này chỉ chứa thông số cho trình tạo nhân vật, không có model 3D, nên mod không đọc trực tiếp được.
 
 ### Model GLB/glTF và animation
 

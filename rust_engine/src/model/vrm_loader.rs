@@ -63,10 +63,12 @@ fn convert_spring_space(
     }
     for spring in &mut data.springs {
         for joint in &mut spring.joints {
-            // UniVRM moves the tail by stiffness and gravity in metres per second.
+            // UniVRM moves the tail by stiffness and gravity in metres per second, tuned for a
+            // human-sized model. Every model here is human-sized in model units (VRM by its metres,
+            // plain glTF normalised by height), so these scale by the metre, not by the file unit.
             joint.hit_radius *= unit_scale;
-            joint.stiffness *= unit_scale;
-            joint.gravity_power *= unit_scale;
+            joint.stiffness *= vrm_skeleton::VRM_TO_PMX_SCALE;
+            joint.gravity_power *= vrm_skeleton::VRM_TO_PMX_SCALE;
             joint.gravity_dir = flip(Vec3::from_array(joint.gravity_dir)).normalize_or_zero().to_array();
         }
     }
