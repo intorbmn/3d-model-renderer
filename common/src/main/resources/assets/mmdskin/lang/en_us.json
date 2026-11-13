@@ -328,5 +328,5 @@
   "gui.mmdskin.model_anim.slot.sneak": "Sneak",
   "gui.mmdskin.model_anim.slot.onHorse": "On Horse",
   "gui.mmdskin.model_anim.slot.crawl": "Crawl",
-  "gui.mmdskin.model_anim.slot.lieDown": "Lie Down",
+  "gui.mmdskin.model_anim.slot.lieDown": "Lie Down"
 }

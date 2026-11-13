@@ -29,6 +29,9 @@ public abstract class AbstractWheelScreen extends Screen {
     private static final int BACKDROP_DIM = TranslucentTrayChrome.OVERLAY;
     private static final float SEGMENT_GAP_DEGREES = 1.8f;
     private static final float CENTER_BUBBLE_SCALE = 0.74f;
+    /** Labels are shrunk no further than this before being truncated. */
+    private static final float MIN_LABEL_SCALE = 0.65f;
+    private static final int LABEL_LINE_HEIGHT = 10;
 
     protected final WheelStyle style;
     protected int centerX;
@@ -115,10 +118,8 @@ public abstract class AbstractWheelScreen extends Screen {
         fillCircle(guiGraphics, centerX, centerY, bubbleRadius + 2, withAlpha(style.centerBorder(), 72));
         drawCircleOutline(guiGraphics, centerX, centerY, bubbleRadius + 1, withAlpha(0xFFFFFF, 16));
 
-        String display = fitText(text, Math.max(88, Math.round(innerRadius * 1.4f)));
-        int textWidth = this.font.width(display);
-        guiGraphics.text(this.font, display, centerX - textWidth / 2 + 1, centerY - 4, style.textShadow(), false);
-        guiGraphics.text(this.font, display, centerX - textWidth / 2, centerY - 5, textColor, false);
+        // Keep the text inside the bubble it is drawn on.
+        renderFittedLabel(guiGraphics, text, centerX, centerY, Math.max(24, bubbleRadius * 2 - 10), textColor);
     }
 
     protected void renderEmptyState(GuiGraphicsExtractor guiGraphics, Component hint) {
@@ -179,7 +180,9 @@ public abstract class AbstractWheelScreen extends Screen {
             int cx = Math.round(centerX + cos * textRadius);
             int cy = Math.round(centerY + sin * textRadius);
             float halfSweepRad = (float) Math.toRadians(sweep * 0.5f);
-            int maxTextWidth = Math.round(Mth.clamp(2.0f * textRadius * (float) Math.sin(halfSweepRad) * 0.90f, 86.0f, 210.0f));
+            // The width really available at the label's radius. It used to be clamped to at least 86 px,
+            // which let longer (non-CJK) labels spill into the neighbouring segments on small wheels.
+            int maxTextWidth = Math.round(Mth.clamp(2.0f * textRadius * (float) Math.sin(halfSweepRad) * 0.90f, 24.0f, 210.0f));
 
             if (entry.secondaryText() == null || entry.secondaryText().isEmpty()) {
                 renderSingleEntry(guiGraphics, entry.primaryText(), cx, cy, pop, maxTextWidth);
@@ -196,32 +199,83 @@ public abstract class AbstractWheelScreen extends Screen {
     }
 
     private void renderSingleEntry(GuiGraphicsExtractor guiGraphics, String text, int centerTextX, int centerTextY, float pop, int maxWidth) {
-        String display = fitText(text, Math.max(62, maxWidth));
-        int width = this.font.width(display);
         int color = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.36f + pop * 0.64f);
-        guiGraphics.text(this.font, display, centerTextX - width / 2 + 1, centerTextY - 4, style.textShadow(), false);
-        guiGraphics.text(this.font, display, centerTextX - width / 2, centerTextY - 5, color, false);
+        renderFittedLabel(guiGraphics, text, centerTextX, centerTextY, maxWidth, color);
     }
 
     private void renderDualEntry(GuiGraphicsExtractor guiGraphics, String icon, String label, int centerTextX, int centerTextY, float pop, int maxWidth) {
-        String displayIcon = icon == null ? "" : icon;
-        int iconWidth = this.font.width(displayIcon);
         int iconColor = blendColors(TEXT_MUTED, TEXT_PRIMARY, 0.42f + pop * 0.58f);
-        guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().translate((float) centerTextX, centerTextY - 10.0f);
-        guiGraphics.pose().scale(1.0f + pop * 0.08f, 1.0f + pop * 0.08f);
-        guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2 + 1, centerTextY - 10, style.textShadow());
-        guiGraphics.text(this.font, displayIcon, centerTextX - iconWidth / 2, centerTextY - 11, iconColor);
-        guiGraphics.pose().popMatrix();
+        renderScaledLine(guiGraphics, fitText(icon == null ? "" : icon, maxWidth),
+                centerTextX, centerTextY - 7, 1.0f + pop * 0.08f, iconColor);
 
-        String displayLabel = fitText(label, Math.max(56, Math.round(maxWidth * 0.76f)));
-        int labelWidth = this.font.width(displayLabel);
         int labelColor = blendColors(TEXT_MUTED, TEXT_SECONDARY, 0.52f + pop * 0.38f);
+        float labelScale = 0.90f + pop * 0.02f;
+        renderScaledLine(guiGraphics, fitText(label == null ? "" : label, Math.round(maxWidth / labelScale)),
+                centerTextX, centerTextY + 7, labelScale, labelColor);
+    }
+
+    /**
+     * Draws {@code text} centred on (cx, cy) without exceeding {@code maxWidth}: on one line if it
+     * fits, otherwise wrapped onto two lines, then shrunk, and only as a last resort truncated.
+     */
+    protected void renderFittedLabel(GuiGraphicsExtractor guiGraphics, String text, int cx, int cy, int maxWidth, int color) {
+        if (text == null || text.isEmpty() || maxWidth <= 0) {
+            return;
+        }
+        String first = text;
+        String second = null;
+        if (this.font.width(text) > maxWidth) {
+            int split = findBalancedSplit(text);
+            if (split > 0) {
+                first = text.substring(0, split).trim();
+                second = text.substring(split).trim();
+            }
+        }
+
+        int widest = Math.max(this.font.width(first), second == null ? 0 : this.font.width(second));
+        float scale = widest > maxWidth ? Math.max(MIN_LABEL_SCALE, (float) maxWidth / widest) : 1.0f;
+        int unscaledLimit = Math.round(maxWidth / scale);
+        first = fitText(first, unscaledLimit);
+
+        if (second == null) {
+            renderScaledLine(guiGraphics, first, cx, cy, scale, color);
+            return;
+        }
+        second = fitText(second, unscaledLimit);
+        float halfGap = LABEL_LINE_HEIGHT * scale * 0.5f;
+        renderScaledLine(guiGraphics, first, cx, Math.round(cy - halfGap), scale, color);
+        renderScaledLine(guiGraphics, second, cx, Math.round(cy + halfGap), scale, color);
+    }
+
+    /** Index of the whitespace that splits {@code text} into the two most evenly sized lines, or -1. */
+    private int findBalancedSplit(String text) {
+        int best = -1;
+        int bestWidth = Integer.MAX_VALUE;
+        for (int i = 1; i < text.length() - 1; i++) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                continue;
+            }
+            int width = Math.max(this.font.width(text.substring(0, i).trim()), this.font.width(text.substring(i).trim()));
+            if (width < bestWidth) {
+                bestWidth = width;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    /** Draws one line with a drop shadow, centred on (cx, cy) and scaled about that point. */
+    private void renderScaledLine(GuiGraphicsExtractor guiGraphics, String line, int cx, int cy, float scale, int color) {
+        if (line == null || line.isEmpty()) {
+            return;
+        }
+        int width = this.font.width(line);
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().translate((float) centerTextX, centerTextY + 4.0f);
-        guiGraphics.pose().scale(0.90f + pop * 0.02f, 0.90f + pop * 0.02f);
-        guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2 + 1, centerTextY + 4, style.textShadow());
-        guiGraphics.text(this.font, displayLabel, centerTextX - labelWidth / 2, centerTextY + 3, labelColor);
+        guiGraphics.pose().translate((float) cx, (float) cy);
+        guiGraphics.pose().scale(scale, scale);
+        // Coordinates are relative to the translated origin.
+        guiGraphics.text(this.font, line, -width / 2 + 1, -3, style.textShadow(), false);
+        guiGraphics.text(this.font, line, -width / 2, -4, color, false);
         guiGraphics.pose().popMatrix();
     }
 
