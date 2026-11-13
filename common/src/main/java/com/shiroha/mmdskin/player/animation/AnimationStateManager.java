@@ -8,7 +8,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.ItemUseAnimation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,14 +94,14 @@ public class AnimationStateManager {
         } else if (player.swingingArm == InteractionHand.MAIN_HAND && player.swinging) {
             String itemId = getItemId(player.getItemInHand(InteractionHand.MAIN_HAND));
             applyCustomItemAnimation(model, EntityAnimState.State.SwingRight, itemId,
-                    "Right", UseAnim.NONE, "swinging", 1);
+                    "Right", ItemUseAnimation.NONE, "swinging", 1);
         } else if (player.getUsedItemHand() == InteractionHand.OFF_HAND && player.isUsingItem()) {
             updateUsingItemAnimation(model, player.getItemInHand(InteractionHand.OFF_HAND),
                     EntityAnimState.State.ItemLeft, "Left", 1);
         } else if (player.swingingArm == InteractionHand.OFF_HAND && player.swinging) {
             String itemId = getItemId(player.getItemInHand(InteractionHand.OFF_HAND));
             applyCustomItemAnimation(model, EntityAnimState.State.SwingLeft, itemId,
-                    "Left", UseAnim.NONE, "swinging", 1);
+                    "Left", ItemUseAnimation.NONE, "swinging", 1);
         }
     }
 
@@ -178,7 +178,7 @@ public class AnimationStateManager {
     }
 
     private static void applyCustomItemAnimation(ManagedModel model, EntityAnimState.State targetState,
-                                                 String itemName, String activeHand, UseAnim useAnim,
+                                                 String itemName, String activeHand, ItemUseAnimation useAnim,
                                                  String handState, int layer) {
         boolean shouldLoop = !"using".equals(handState);
         for (String animationKey : resolveItemAnimationKeys(itemName, activeHand, useAnim, handState)) {
@@ -212,7 +212,7 @@ public class AnimationStateManager {
         }
     }
 
-    static String resolveUseTriggerAnimationName(UseAnim useAnim) {
+    static String resolveUseTriggerAnimationName(ItemUseAnimation useAnim) {
         if (useAnim == null) {
             return null;
         }
@@ -222,12 +222,12 @@ public class AnimationStateManager {
         };
     }
 
-    static List<String> resolveItemAnimationKeys(String itemName, String activeHand, UseAnim useAnim,
+    static List<String> resolveItemAnimationKeys(String itemName, String activeHand, ItemUseAnimation useAnim,
                                                  String handState) {
         List<String> animationKeys = new ArrayList<>();
         animationKeys.add(buildItemAnimationKey(itemName, activeHand, handState));
 
-        if (useAnim == UseAnim.BOW) {
+        if (useAnim == ItemUseAnimation.BOW) {
             String alternateHand = "Right".equals(activeHand) ? "Left" : "Right";
             animationKeys.add(buildItemAnimationKey(itemName, alternateHand, handState));
         }

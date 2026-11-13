@@ -85,6 +85,39 @@ jobs:
           echo "##### classes named like Renderer for players / vertex format / item use"
           unzip -Z1 "$JAR" | grep -E '(PlayerRenderer|AvatarRenderer|VertexFormat|ItemUseAnimation|UseAnim|ResourceLocation|Identifier)\.class$' | head -20
 
+      - name: Look up renamed Minecraft 26.3 members (diagnostic)
+        if: always()
+        run: |
+          set +e
+          JAR=$HOME/.gradle/caches/fabric-loom/26.3/minecraft-merged.jar
+          show() {
+            echo "##### $1  /$2/"
+            javap -public -cp "$JAR" "$1" 2>&1 | grep -E "$2" | cut -c1-230 | head -${3:-60}
+          }
+          full() {
+            echo "##### $1 (full)"
+            javap -public -cp "$JAR" "$1" 2>&1 | cut -c1-230 | head -${2:-80}
+          }
+          show net.minecraft.world.entity.Entity 'Rot|getVehicle|isPassenger|getType\(|position\(|isCrouching|isSwimming|isFallFlying|isInvisible'
+          show net.minecraft.world.entity.LivingEntity 'swing|Swing|hurt|UseItem|UsedItemHand|TicksUsingItem|isUsingItem|isSleeping|BodyRot|HeadRot|attackAnim|walkAnim|isBaby|getMainArm'
+          show net.minecraft.client.player.LocalPlayer 'Rot|swing|Swing|isUsing'
+          show net.minecraft.world.entity.EntityType 'HORSE|DONKEY|MULE|CAMEL|PLAYER|AVATAR|PIG|STRIDER|BOAT|ARMOR_STAND' 40
+          full net.minecraft.world.item.ItemUseAnimation 30
+          show net.minecraft.client.gui.Gui 'hat|hud|Hud|creen|verlay|ubtitle|ActionBar'
+          show net.minecraft.client.gui.components.ChatComponent 'add|Message'
+          show net.minecraft.client.Options 'ebug|Debug|hideGui|guiScale|CameraType|fov|keyUse|keyAttack|keyShift|keyUp|keyJump'
+          show net.minecraft.client.gui.screens.inventory.InventoryScreen 'ecipe|Recipe|Entity|getPlayer'
+          show net.minecraft.client.gui.screens.inventory.AbstractRecipeBookScreen 'ecipe|Recipe'
+          show net.minecraft.client.Minecraft 'ItemModel|ItemRenderer|EntityRenderDispatcher|getEntityRenderer|gameRenderer|getCameraEntity|execute|getPartialTick|getTimer|getDeltaTracker'
+          show net.minecraft.client.DeltaTracker 'Tick|tick'
+          full net.minecraft.client.renderer.SubmitNodeCollector 60
+          full net.minecraft.client.renderer.entity.EntityRenderer 40
+          full net.minecraft.client.renderer.entity.EntityRendererProvider\$Context 60
+          full net.minecraft.client.renderer.item.ItemModelResolver 30
+          full net.minecraft.client.renderer.item.ItemStackRenderState 50
+          echo "##### classes named like buffer sources / submit nodes / item renderers"
+          unzip -Z1 "$JAR" | grep -E '(MultiBufferSource|RenderBuffers|SubmitNode|ItemRenderer|ItemModelResolver|ItemStackRenderState|ItemDisplayContext)[A-Za-z$]*\.class$' | head -30
+
       - name: Upload compile reports
         if: always()
         uses: actions/upload-artifact@v4

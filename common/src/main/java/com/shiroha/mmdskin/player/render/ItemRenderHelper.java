@@ -123,8 +123,8 @@ public class ItemRenderHelper {
         matrixStack.pushPose();
         matrixStack.last().pose().mul(convertToMatrix4f(runtimeBridge, handMat, model.entityState().matBuffer));
 
-        matrixStack.mulPose(new Quaternionf().rotateX(90.0f * DEG_TO_RAD));
-        matrixStack.mulPose(new Quaternionf().rotateY(180.0f * DEG_TO_RAD));
+        matrixStack.rotate(new Quaternionf().rotateX(90.0f * DEG_TO_RAD));
+        matrixStack.rotate(new Quaternionf().rotateY(180.0f * DEG_TO_RAD));
 
         applyConfiguredRotation(matrixStack, player, model, hand);
 
@@ -154,7 +154,7 @@ public class ItemRenderHelper {
                     case "y" -> q.rotateY(rotation * DEG_TO_RAD);
                     case "z" -> q.rotateZ(rotation * DEG_TO_RAD);
                 }
-                matrixStack.mulPose(q);
+                matrixStack.rotate(q);
             }
         }
     }

@@ -9,11 +9,7 @@ import com.shiroha.mmdskin.render.pipeline.RenderPerformanceProfiler;
 import com.shiroha.mmdskin.render.policy.WorldRenderPolicy;
 import com.shiroha.mmdskin.stage.client.camera.MMDCameraController;
 import com.shiroha.mmdskin.texture.runtime.TextureRepository;
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.apache.logging.log4j.LogManager;
@@ -240,46 +236,6 @@ public abstract class BaseModelInstance implements ModelInstance {
             MemoryUtil.memFree(materialMorphResultsByteBuffer);
             materialMorphResultsByteBuffer = null;
         }
-    }
-
-    protected static void setupShaderUniforms(ShaderInstance shader, PoseStack deliverStack,
-                                               Vector3f light0Dir, Vector3f light1Dir, int lightMapTex) {
-        if (shader.MODEL_VIEW_MATRIX != null)
-            shader.MODEL_VIEW_MATRIX.set(deliverStack.last().pose());
-        if (shader.PROJECTION_MATRIX != null)
-            shader.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
-        if (shader.INVERSE_VIEW_ROTATION_MATRIX != null)
-            shader.INVERSE_VIEW_ROTATION_MATRIX.set(RenderSystem.getInverseViewRotationMatrix());
-        if (shader.COLOR_MODULATOR != null)
-            shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
-        if (shader.LIGHT0_DIRECTION != null)
-            shader.LIGHT0_DIRECTION.set(light0Dir);
-        if (shader.LIGHT1_DIRECTION != null)
-            shader.LIGHT1_DIRECTION.set(light1Dir);
-        if (shader.FOG_START != null)
-            shader.FOG_START.set(RenderSystem.getShaderFogStart());
-        if (shader.FOG_END != null)
-            shader.FOG_END.set(RenderSystem.getShaderFogEnd());
-        if (shader.FOG_COLOR != null)
-            shader.FOG_COLOR.set(RenderSystem.getShaderFogColor());
-        if (shader.FOG_SHAPE != null)
-            shader.FOG_SHAPE.set(RenderSystem.getShaderFogShape().getIndex());
-        if (shader.TEXTURE_MATRIX != null)
-            shader.TEXTURE_MATRIX.set(RenderSystem.getTextureMatrix());
-        if (shader.GAME_TIME != null)
-            shader.GAME_TIME.set(RenderSystem.getShaderGameTime());
-        if (shader.SCREEN_SIZE != null) {
-            Window window = Minecraft.getInstance().getWindow();
-            shader.SCREEN_SIZE.set((float) window.getScreenWidth(), (float) window.getScreenHeight());
-        }
-        if (shader.LINE_WIDTH != null)
-            shader.LINE_WIDTH.set(RenderSystem.getShaderLineWidth());
-
-        shader.setSampler("Sampler1", lightMapTex);
-        shader.setSampler("Sampler2", lightMapTex);
-
-        RenderSystem.setShaderTexture(1, lightMapTex);
-        RenderSystem.setShaderTexture(2, lightMapTex);
     }
 
     protected abstract void doRenderModel(Entity entityIn, float entityYaw, float entityPitch,

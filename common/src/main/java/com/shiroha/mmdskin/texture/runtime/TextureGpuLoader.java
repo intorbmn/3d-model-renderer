@@ -1,6 +1,7 @@
 package com.shiroha.mmdskin.texture.runtime;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import com.shiroha.mmdskin.bridge.runtime.NativeTexturePort;
 import org.lwjgl.opengl.GL46C;
 import org.lwjgl.system.MemoryUtil;
@@ -83,10 +84,10 @@ final class TextureGpuLoader {
 
     static void deleteGlTexture(int texId) {
         if (texId <= 0) return;
-        if (RenderSystem.isOnRenderThreadOrInit()) {
+        if (RenderSystem.isOnRenderThread()) {
             GL46C.glDeleteTextures(texId);
         } else {
-            RenderSystem.recordRenderCall(() -> GL46C.glDeleteTextures(texId));
+            Minecraft.getInstance().execute(() -> GL46C.glDeleteTextures(texId));
         }
     }
 

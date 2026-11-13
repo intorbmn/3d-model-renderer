@@ -58,7 +58,7 @@ public class InventoryRenderHelper {
         modelViewStack.popPose();
 
         Quaternionf bodyRotation = new Quaternionf().rotateY(-player.yBodyRot * ((float)Math.PI / 180F));
-        matrixStack.mulPose(bodyRotation);
+        matrixStack.rotate(bodyRotation);
         matrixStack.scale(inventorySize, inventorySize, inventorySize);
         matrixStack.scale(0.09f, 0.09f, 0.09f);
     }

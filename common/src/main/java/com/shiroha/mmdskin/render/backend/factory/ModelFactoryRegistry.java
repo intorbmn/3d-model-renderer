@@ -22,9 +22,10 @@ public final class ModelFactoryRegistry {
             return;
         }
 
+        // The OpenGL CPU/GPU skinning backends are excluded from compilation until they are ported
+        // to the Minecraft 26.3 render pipeline (see common/build.gradle).
         List<ModelInstanceFactory> builtInFactories = List.of(
-                new CpuSkinningBackendFactory(nativeRenderBackendPort),
-                new GpuSkinningBackendFactory(nativeRenderBackendPort, platformCapabilityPort)
+                new NoRenderBackendFactory(nativeRenderBackendPort)
         );
         for (ModelInstanceFactory factory : builtInFactories) {
             RenderModeManager.registerFactory(factory);

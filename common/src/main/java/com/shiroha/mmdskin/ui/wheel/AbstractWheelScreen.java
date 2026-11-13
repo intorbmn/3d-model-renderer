@@ -1,7 +1,7 @@
 package com.shiroha.mmdskin.ui.wheel;
 
 import com.shiroha.mmdskin.ui.chrome.TranslucentTrayChrome;
-import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.input.KeyEvent;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -320,7 +320,7 @@ public abstract class AbstractWheelScreen extends Screen {
         drawRing(guiGraphics, cx, cy, Math.max(0.0f, radius - width), radius, 0.0f, 360.0f, color);
     }
 
-    private void drawSeparator(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
+    private void drawSeparator(GuiGraphicsExtractor graphics, float cx, float cy,
                                 float inner, float outer, float angleDeg, int color) {
         float radians = (float) Math.toRadians(angleDeg);
         float x1 = cx + Mth.cos(radians) * inner;
@@ -336,12 +336,12 @@ public abstract class AbstractWheelScreen extends Screen {
         }
     }
 
-    private void drawAnnularSegment(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
+    private void drawAnnularSegment(GuiGraphicsExtractor graphics, float cx, float cy,
                                     float inner, float outer, float startDeg, float sweepDeg, int color) {
         drawRing(graphics, cx, cy, inner, outer, startDeg, sweepDeg, color);
     }
 
-    private void drawAnnularSegmentOutline(GuiGraphicsExtractorExtractor graphics, float cx, float cy,
+    private void drawAnnularSegmentOutline(GuiGraphicsExtractor graphics, float cx, float cy,
                                            float inner, float outer, float startDeg, float sweepDeg,
                                            int color, float width) {
         drawRing(graphics, cx, cy, outer - width, outer, startDeg, sweepDeg, color);

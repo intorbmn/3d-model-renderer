@@ -66,6 +66,18 @@ dependencies {
 sourceSets {
     main {
         resources.srcDir(nativeResourcesDir)
+        java {
+            // Minecraft 26.3 removed GlStateManager, ShaderInstance, BufferUploader and the
+            // RenderSystem shader state that these classes are built on. They stay in the tree
+            // (history and reference for the rewrite) but are not compiled until they are ported
+            // to the new render pipeline. NoRenderBackendFactory is registered instead.
+            exclude "**/render/backend/opengl/**"
+            exclude "**/render/backend/gpu/**"
+            exclude "**/render/shader/**"
+            exclude "**/render/material/SubMeshDrawHelper.java"
+            exclude "**/render/backend/factory/CpuSkinningBackendFactory.java"
+            exclude "**/render/backend/factory/GpuSkinningBackendFactory.java"
+        }
     }
 }
 
