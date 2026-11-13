@@ -194,6 +194,20 @@ fn extract_textures(model_dir: &Path, images: &[gltf::image::Data]) -> Vec<Strin
     paths
 }
 
+/// Sign applied to X and Z when importing, so that every model faces +Z as the engine expects
+/// (PMX is converted to the same convention by negating Z).
+///
+/// VRM files keep the half-turn the loader has always applied to them. A plain glTF follows the
+/// glTF convention that the front of an asset faces +Z, so it is imported as it is; turning it too
+/// made such models stand back to front.
+fn facing_sign(is_generic_gltf: bool) -> f32 {
+    if is_generic_gltf {
+        1.0
+    } else {
+        -1.0
+    }
+}
+
 /// 通用 glTF 的目标身高（PMX 单位）。常见 MMD 模型约 20 单位高（≈1.6 m）。
 const GENERIC_TARGET_HEIGHT: f32 = 20.0;
 
@@ -233,7 +247,8 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
     } else {
         vrm_extensions::parse_vrm_extensions(&document)?
     };
-    let mut mesh = vrm_mesh::merge_meshes(&document, &buffers)?;
+    let xz_sign = facing_sign(is_generic_gltf);
+    let mut mesh = vrm_mesh::merge_meshes(&document, &buffers, xz_sign)?;
     if mesh.vertices.is_empty() || mesh.indices.is_empty() {
         return Err(MmdError::VrmParse("glTF 不包含可渲染的网格".into()));
     }
@@ -259,7 +274,14 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
         .next()
         .ok_or_else(|| MmdError::VrmParse("glTF/VRM 缺少 skin 数据（仅支持带骨骼蒙皮的模型）".into()))?;
     let bone_manager =
-        vrm_skeleton::build_skeleton(&document, &skin, &buffers, &vrm_ext.humanoid, unit_scale)?;
+        vrm_skeleton::build_skeleton(
+            &document,
+            &skin,
+            &buffers,
+            &vrm_ext.humanoid,
+            unit_scale,
+            xz_sign,
+        )?;
     let vrm_ext = remap_extensions_to_runtime_bones(vrm_ext, &skin);
 
     let (materials, _placeholder_paths) = vrm_material::convert_materials(&document, &vrm_ext);

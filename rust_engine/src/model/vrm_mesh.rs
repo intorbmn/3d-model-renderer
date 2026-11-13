@@ -24,9 +24,12 @@ pub(crate) struct MergedMesh {
 }
 
 /// 合并所有 mesh primitives 为统一的顶点/索引数组
+/// `xz_sign`: -1.0 turns the model half a turn about Y (X and Z negated), +1.0 keeps the file's facing.
+/// The engine expects models to face +Z; see `vrm_loader::facing_sign`.
 pub(crate) fn merge_meshes(
     document: &gltf::Document,
     buffers: &[gltf::buffer::Data],
+    xz_sign: f32,
 ) -> Result<MergedMesh> {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
@@ -40,17 +43,17 @@ pub(crate) fn merge_meshes(
             let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
             let vertex_offset = vertices.len() as u32;
 
-            // 左手→右手坐标系对齐：X-flip + Z-flip（等价于绕 Y 轴旋转 180°）
+            // 朝向对齐：xz_sign = -1 时 X-flip + Z-flip（等价于绕 Y 轴旋转 180°），+1 时保持原样
             let positions: Vec<Vec3> = reader
                 .read_positions()
-                .map(|iter| iter.map(|p| Vec3::new(-p[0], p[1], -p[2])).collect())
+                .map(|iter| iter.map(|p| Vec3::new(xz_sign * p[0], p[1], xz_sign * p[2])).collect())
                 .unwrap_or_default();
             let vertex_count = positions.len();
 
             // NORMAL — 同样 X-flip + Z-flip
             let normals: Vec<Vec3> = reader
                 .read_normals()
-                .map(|iter| iter.map(|n| Vec3::new(-n[0], n[1], -n[2])).collect())
+                .map(|iter| iter.map(|n| Vec3::new(xz_sign * n[0], n[1], xz_sign * n[2])).collect())
                 .unwrap_or_else(|| vec![Vec3::new(0.0, 0.0, 1.0); vertex_count]);
 
             // TEXCOORD_0 → RuntimeVertex.uv（V 轴翻转：glTF V=0 在顶部，纹理加载时做了 flip_vertical 需要匹配）
@@ -124,10 +127,10 @@ pub(crate) fn merge_meshes(
                 .read_morph_targets()
                 .map(|(positions, normals, _tangents)| {
                     let position_offsets = positions
-                        .map(|iter| iter.map(|p| Vec3::new(-p[0], p[1], -p[2])).collect())
+                        .map(|iter| iter.map(|p| Vec3::new(xz_sign * p[0], p[1], xz_sign * p[2])).collect())
                         .unwrap_or_else(|| vec![Vec3::ZERO; vertex_count]);
                     let normal_offsets = normals
-                        .map(|iter| iter.map(|n| Vec3::new(-n[0], n[1], -n[2])).collect())
+                        .map(|iter| iter.map(|n| Vec3::new(xz_sign * n[0], n[1], xz_sign * n[2])).collect())
                         .unwrap_or_default();
                     MorphTargetData {
                         position_offsets,

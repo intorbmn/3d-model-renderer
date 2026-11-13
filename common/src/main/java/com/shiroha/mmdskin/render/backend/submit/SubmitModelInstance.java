@@ -247,58 +247,56 @@ public final class SubmitModelInstance extends BaseModelInstance {
         subMeshData.clear();
         port.batchGetSubMeshData(model, subMeshData);
 
-        poseStack.pushPose();
-        try {
-            poseStack.rotate(tempQuat.identity().rotateY(-entityYaw * ((float) Math.PI / 180F)));
-            poseStack.rotate(tempQuat.identity().rotateX(entityPitch * ((float) Math.PI / 180F)));
-            poseStack.translate(entityTrans.x, entityTrans.y, entityTrans.z);
-            float scale = getModelScale();
-            poseStack.scale(scale, scale, scale);
+        // The model transform is deliberately left on the pose stack, as the original renderer did:
+        // callers draw held items right after this with that transform in place, and every caller
+        // wraps the call in its own pushPose/popPose.
+        poseStack.rotate(tempQuat.identity().rotateY(-entityYaw * ((float) Math.PI / 180F)));
+        poseStack.rotate(tempQuat.identity().rotateX(entityPitch * ((float) Math.PI / 180F)));
+        poseStack.translate(entityTrans.x, entityTrans.y, entityTrans.z);
+        float scale = getModelScale();
+        poseStack.scale(scale, scale, scale);
 
-            // Toon outline (off unless toon rendering is enabled in the settings).
-            boolean outline = ConfigManager.isToonRenderingEnabled() && ConfigManager.isToonOutlineEnabled();
-            float outlineWidth = outline ? ConfigManager.getToonOutlineWidth() : 0.0f;
-            int outlineColor = outline ? packOutlineColor() : 0;
-            RenderType outlineType = outline && outlineWidth > 0.0f ? outlineRenderType() : null;
+        // Toon outline (off unless toon rendering is enabled in the settings).
+        boolean outline = ConfigManager.isToonRenderingEnabled() && ConfigManager.isToonOutlineEnabled();
+        float outlineWidth = outline ? ConfigManager.getToonOutlineWidth() : 0.0f;
+        int outlineColor = outline ? packOutlineColor() : 0;
+        RenderType outlineType = outline && outlineWidth > 0.0f ? outlineRenderType() : null;
 
-            int translucentOrder = 0;
-            for (int i = 0; i < subMeshCount; i++) {
-                int base = i * SUB_MESH_STRIDE;
-                int materialId = subMeshData.getInt(base);
-                int beginIndex = subMeshData.getInt(base + 4);
-                int indexCount = subMeshData.getInt(base + 8);
-                float baseAlpha = subMeshData.getFloat(base + 12);
-                boolean visible = subMeshData.get(base + 16) != 0;
-                if (!visible || materialId < 0 || materialId >= materials.length) {
-                    continue;
-                }
-                if (beginIndex < 0 || indexCount < 3 || beginIndex > indices.length - indexCount) {
-                    continue;
-                }
-                float alpha = Math.min(1.0f, getEffectiveMaterialAlpha(materialId, baseAlpha));
-                if (!(alpha >= MIN_VISIBLE_ALPHA)) {
-                    continue;
-                }
-
-                Material material = materials[materialId];
-                boolean translucent = material.translucentTexture || alpha < OPAQUE_ALPHA;
-                int color = packColor(material, alpha);
-                int first = beginIndex;
-                int count = indexCount - indexCount % 3;
-
-                // Blended materials are layered (eyes over face, lashes over eyes): keep the model's
-                // material order for them. Opaque materials are depth-tested and can share one order.
-                var target = translucent ? collector.order(++translucentOrder) : collector;
-                target.submitCustomGeometry(poseStack, material.renderType(translucent),
-                        (pose, consumer) -> emit(pose, consumer, first, count, color, packedLight));
-
-                if (outlineType != null && !translucent) {
-                    collector.submitCustomGeometry(poseStack, outlineType,
-                            (pose, consumer) -> emitOutline(pose, consumer, first, count, outlineColor, outlineWidth, packedLight));
-                }
+        int translucentOrder = 0;
+        for (int i = 0; i < subMeshCount; i++) {
+            int base = i * SUB_MESH_STRIDE;
+            int materialId = subMeshData.getInt(base);
+            int beginIndex = subMeshData.getInt(base + 4);
+            int indexCount = subMeshData.getInt(base + 8);
+            float baseAlpha = subMeshData.getFloat(base + 12);
+            boolean visible = subMeshData.get(base + 16) != 0;
+            if (!visible || materialId < 0 || materialId >= materials.length) {
+                continue;
             }
-        } finally {
-            poseStack.popPose();
+            if (beginIndex < 0 || indexCount < 3 || beginIndex > indices.length - indexCount) {
+                continue;
+            }
+            float alpha = Math.min(1.0f, getEffectiveMaterialAlpha(materialId, baseAlpha));
+            if (!(alpha >= MIN_VISIBLE_ALPHA)) {
+                continue;
+            }
+
+            Material material = materials[materialId];
+            boolean translucent = material.translucentTexture || alpha < OPAQUE_ALPHA;
+            int color = packColor(material, alpha);
+            int first = beginIndex;
+            int count = indexCount - indexCount % 3;
+
+            // Blended materials are layered (eyes over face, lashes over eyes): keep the model's
+            // material order for them. Opaque materials are depth-tested and can share one order.
+            var target = translucent ? collector.order(++translucentOrder) : collector;
+            target.submitCustomGeometry(poseStack, material.renderType(translucent),
+                    (pose, consumer) -> emit(pose, consumer, first, count, color, packedLight));
+
+            if (outlineType != null && !translucent) {
+                collector.submitCustomGeometry(poseStack, outlineType,
+                        (pose, consumer) -> emitOutline(pose, consumer, first, count, outlineColor, outlineWidth, packedLight));
+            }
         }
     }
 

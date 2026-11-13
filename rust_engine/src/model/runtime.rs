@@ -189,6 +189,8 @@ pub struct MmdModel {
     eye_bone_index: Option<usize>,
     /// 左/右目的索引（用于取中点）
     eye_bone_pair: Option<(usize, usize)>,
+    /// Rest-pose eye position estimated from the mesh when no head/eye bone could be identified.
+    fallback_eye_position: Option<Vec3>,
 
     // ======== VR 手部模式 ========
     /// VR 手部渲染模式：0=全身, 1=仅左手, 2=仅右手
@@ -310,6 +312,7 @@ impl MmdModel {
             head_detection_initialized: false,
             eye_bone_index: None,
             eye_bone_pair: None,
+            fallback_eye_position: None,
         }
     }
 
@@ -647,6 +650,21 @@ impl MmdModel {
             }
         }
 
+        // No neck/head bone by name (e.g. a plain glTF whose bone names are not MMD or English ones):
+        // estimate the neck line and the eye position from the proportions of the rest-pose mesh.
+        self.fallback_eye_position = None;
+        if neck_y.is_none() {
+            if let Some((estimated_neck_y, estimated_eye)) = self.estimate_head_from_mesh() {
+                log::info!(
+                    "第一人称分界线: 未找到颈部/头部骨骼，按网格比例估算 neck_y={:.2}, eye={:?}",
+                    estimated_neck_y,
+                    estimated_eye
+                );
+                neck_y = Some(estimated_neck_y);
+                self.fallback_eye_position = Some(estimated_eye);
+            }
+        }
+
         let cutoff_y = match neck_y {
             Some(y) => y,
             None => {
@@ -764,6 +782,45 @@ impl MmdModel {
         }
     }
 
+    /// Estimates (neck height, eye position) from the rest-pose mesh for models whose head cannot be
+    /// found by bone name. Uses typical humanoid proportions of the bounding-box height; the eye is
+    /// centred on the vertices above the neck line. Returns `None` for an empty or flat mesh.
+    fn estimate_head_from_mesh(&self) -> Option<(f32, Vec3)> {
+        const NECK_HEIGHT_RATIO: f32 = 0.84;
+        const EYE_HEIGHT_RATIO: f32 = 0.91;
+
+        let (min_y, max_y) = self
+            .vertices
+            .iter()
+            .fold((f32::INFINITY, f32::NEG_INFINITY), |(lo, hi), v| {
+                (lo.min(v.position.y), hi.max(v.position.y))
+            });
+        let height = max_y - min_y;
+        if !height.is_finite() || height <= 1.0e-4 {
+            return None;
+        }
+
+        let neck_y = min_y + height * NECK_HEIGHT_RATIO;
+        let eye_y = min_y + height * EYE_HEIGHT_RATIO;
+        // Centre on a thin band at eye height: long hair above the neck line would pull a plain
+        // average of all head vertices backwards.
+        let band = height * 0.02;
+        let (mut sum_x, mut sum_z, mut count) = (0.0f64, 0.0f64, 0u32);
+        for v in &self.vertices {
+            if (v.position.y - eye_y).abs() <= band {
+                sum_x += v.position.x as f64;
+                sum_z += v.position.z as f64;
+                count += 1;
+            }
+        }
+        let eye = if count > 0 {
+            Vec3::new((sum_x / count as f64) as f32, eye_y, (sum_z / count as f64) as f32)
+        } else {
+            Vec3::new(0.0, eye_y, 0.0)
+        };
+        Some((neck_y, eye))
+    }
+
     /// 设置第一人称模式
     /// 启用时只生成临时有效遮罩，用户材质配置不被覆盖。
     pub fn set_first_person_mode(&mut self, enabled: bool) {
@@ -839,7 +896,7 @@ impl MmdModel {
                 .unwrap_or(Vec3::ZERO);
         }
 
-        Vec3::ZERO
+        self.fallback_eye_position.unwrap_or(Vec3::ZERO)
     }
 
     pub fn current_head_rotation(&mut self) -> Quat {

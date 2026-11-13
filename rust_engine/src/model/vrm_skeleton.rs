@@ -67,6 +67,7 @@ pub(crate) fn build_skeleton(
     buffers: &[gltf::buffer::Data],
     humanoid_mapping: &HumanoidMapping,
     unit_scale: f32,
+    xz_sign: f32,
 ) -> crate::Result<BoneSet> {
     let parent_map = build_parent_map(document);
 
@@ -91,6 +92,7 @@ pub(crate) fn build_skeleton(
         &ibms,
         &node_world_transforms,
         unit_scale,
+        xz_sign,
     );
 
     let mut bone_set = BoneSet::new();
@@ -114,16 +116,16 @@ pub(crate) fn build_skeleton(
         let world_pos = if joint_idx < ibms.len() {
             let bind_matrix = ibms[joint_idx].inverse();
             Vec3::new(
-                -bind_matrix.col(3).x,
+                xz_sign * bind_matrix.col(3).x,
                 bind_matrix.col(3).y,
-                -bind_matrix.col(3).z,
+                xz_sign * bind_matrix.col(3).z,
             )
         } else {
             let wt = node_world_transforms
                 .get(&node_idx)
                 .copied()
                 .unwrap_or(Mat4::IDENTITY);
-            Vec3::new(-wt.col(3).x, wt.col(3).y, -wt.col(3).z)
+            Vec3::new(xz_sign * wt.col(3).x, wt.col(3).y, xz_sign * wt.col(3).z)
         };
 
         bone.initial_position = world_pos * unit_scale;
@@ -272,6 +274,7 @@ fn find_hips_world_pos(
     ibms: &[Mat4],
     node_world_transforms: &HashMap<usize, Mat4>,
     unit_scale: f32,
+    xz_sign: f32,
 ) -> Vec3 {
     for (&node_idx, vrm_name) in &humanoid_mapping.map {
         if vrm_name == "hips" {
@@ -279,16 +282,16 @@ fn find_hips_world_pos(
                 let world_pos = if joint_idx < ibms.len() {
                     let bind_matrix = ibms[joint_idx].inverse();
                     Vec3::new(
-                        -bind_matrix.col(3).x,
-                        bind_matrix.col(3).y,
-                        -bind_matrix.col(3).z,
-                    )
+                xz_sign * bind_matrix.col(3).x,
+                bind_matrix.col(3).y,
+                xz_sign * bind_matrix.col(3).z,
+            )
                 } else {
                     let wt = node_world_transforms
                         .get(&node_idx)
                         .copied()
                         .unwrap_or(Mat4::IDENTITY);
-                    Vec3::new(-wt.col(3).x, wt.col(3).y, -wt.col(3).z)
+                    Vec3::new(xz_sign * wt.col(3).x, wt.col(3).y, xz_sign * wt.col(3).z)
                 };
                 return world_pos * unit_scale;
             }
