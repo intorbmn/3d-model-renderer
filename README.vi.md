@@ -19,9 +19,13 @@ Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng mode
 | Minecraft 26.3, Fabric | Biên dịch và chạy được |
 | Model PMX/PMD | Hiển thị được |
 | Model GLB/glTF không có VRM | Nạp được; một số model hiển thị lỗi |
-| Tay ở góc nhìn thứ nhất | Chưa port |
+| Góc nhìn thứ nhất (ẩn tay gốc) | Đã port, cần test trong game |
+| Viền toon (outline) | Đã port, cần test trong game |
+| Tô bóng toon, GPU skinning | Chưa port |
 | Tương thích Touhou Little Maid, Vivecraft, Iris | Chưa port |
 | Forge / NeoForge, bản Minecraft cũ | Không hỗ trợ trong repo này |
+
+Mức độ đầy đủ so với bản gốc và kế hoạch các tính năng sắp tới: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Cài đặt
 

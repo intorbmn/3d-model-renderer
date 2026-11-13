@@ -125,9 +125,6 @@ sourceSets {
     main {
         java {
             exclude "**/EntityMaidRendererMixin.java" // optional Maid compatibility deferred for 26.3
-            // First-person hand rendering still targets the removed ItemInHandRenderer; it is ported
-            // separately from the model render backend and is not listed in mmdskin-fabric.mixins.json.
-            exclude "**/ItemInHandRendererMixin.java"
             exclude "**/VivecraftVRPlayerRendererMixin.java"
         }
         resources {

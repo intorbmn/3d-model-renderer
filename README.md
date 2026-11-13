@@ -19,9 +19,13 @@ In development; there is no official release yet.
 | Minecraft 26.3, Fabric | Builds and runs |
 | PMX/PMD models | Render |
 | GLB/glTF models without VRM data | Load; some models render incorrectly |
-| First-person hands | Not ported yet |
+| First-person view (vanilla hands hidden) | Ported, needs in-game testing |
+| Toon outline | Ported, needs in-game testing |
+| Toon shading, GPU skinning | Not ported yet |
 | Touhou Little Maid, Vivecraft, Iris compatibility | Not ported yet |
 | Forge / NeoForge, older Minecraft versions | Not supported in this repository |
+
+Feature parity with the original mod and the plan for upcoming work are tracked in [docs/ROADMAP.md](docs/ROADMAP.md) (Vietnamese).
 
 ## Installation
 

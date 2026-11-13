@@ -15,6 +15,7 @@
     "EntityMixin",
     "EntityRenderStateMixin",
     "EntityRendererMixin",
+    "FirstPersonHandsMixin",
     "GuiEntityRendererMixin",
     "LivingEntityRendererMixin"
   ],

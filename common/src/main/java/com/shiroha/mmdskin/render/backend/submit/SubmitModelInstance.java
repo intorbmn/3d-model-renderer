@@ -3,6 +3,7 @@ package com.shiroha.mmdskin.render.backend.submit;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.shiroha.mmdskin.bridge.runtime.NativeRenderBackendPort;
+import com.shiroha.mmdskin.config.ConfigManager;
 import com.shiroha.mmdskin.render.backend.BaseModelInstance;
 import com.shiroha.mmdskin.texture.runtime.RuntimeTextures;
 import com.shiroha.mmdskin.texture.runtime.TextureRepository;
@@ -254,6 +255,12 @@ public final class SubmitModelInstance extends BaseModelInstance {
             float scale = getModelScale();
             poseStack.scale(scale, scale, scale);
 
+            // Toon outline (off unless toon rendering is enabled in the settings).
+            boolean outline = ConfigManager.isToonRenderingEnabled() && ConfigManager.isToonOutlineEnabled();
+            float outlineWidth = outline ? ConfigManager.getToonOutlineWidth() : 0.0f;
+            int outlineColor = outline ? packOutlineColor() : 0;
+            RenderType outlineType = outline && outlineWidth > 0.0f ? outlineRenderType() : null;
+
             int translucentOrder = 0;
             for (int i = 0; i < subMeshCount; i++) {
                 int base = i * SUB_MESH_STRIDE;
@@ -284,10 +291,31 @@ public final class SubmitModelInstance extends BaseModelInstance {
                 var target = translucent ? collector.order(++translucentOrder) : collector;
                 target.submitCustomGeometry(poseStack, material.renderType(translucent),
                         (pose, consumer) -> emit(pose, consumer, first, count, color, packedLight));
+
+                if (outlineType != null && !translucent) {
+                    collector.submitCustomGeometry(poseStack, outlineType,
+                            (pose, consumer) -> emitOutline(pose, consumer, first, count, outlineColor, outlineWidth, packedLight));
+                }
             }
         } finally {
             poseStack.popPose();
         }
+    }
+
+    private static int packOutlineColor() {
+        int r = Math.round(clamp01(ConfigManager.getToonOutlineR()) * 255.0f) & 0xFF;
+        int g = Math.round(clamp01(ConfigManager.getToonOutlineG()) * 255.0f) & 0xFF;
+        int b = Math.round(clamp01(ConfigManager.getToonOutlineB()) * 255.0f) & 0xFF;
+        return 0xFF000000 | r << 16 | g << 8 | b;
+    }
+
+    private static RenderType outlineType;
+
+    private static RenderType outlineRenderType() {
+        if (outlineType == null) {
+            outlineType = RenderTypes.entityCutoutCull(RuntimeTextures.white());
+        }
+        return outlineType;
     }
 
     private static int packColor(Material material, float alpha) {
@@ -343,6 +371,51 @@ public final class SubmitModelInstance extends BaseModelInstance {
             vertex(consumer, tp, tn, uv, c, color, overlay, packedLight);
             vertex(consumer, tp, tn, uv, c, color, overlay, packedLight);
         }
+    }
+
+    /**
+     * Inverted-hull outline: the mesh pushed out along its normals and drawn with reversed winding on a
+     * back-face-culling render type, so only the rim behind the model remains visible. The width
+     * follows the original outline shader: slightly wider with distance, fading out beyond 25 blocks.
+     */
+    private void emitOutline(PoseStack.Pose pose, VertexConsumer consumer, int first, int count,
+                             int color, float width, int packedLight) {
+        if (disposed || positions == null) {
+            return;
+        }
+        transformGeometry(pose);
+
+        Matrix4f m = transformedPose;
+        float depth = Math.max(0.5f, (float) Math.sqrt(m.m30() * m.m30() + m.m31() * m.m31() + m.m32() * m.m32()));
+        float widen = 0.8f + 0.4f * Math.min(1.0f, Math.max(0.0f, (depth - 1.0f) / 12.0f));
+        float fade = Math.min(1.0f, Math.max(0.0f, 1.0f - (depth - 25.0f) / 15.0f));
+        float offset = width * widen * fade;
+        if (!(offset > 0.0f)) {
+            return;
+        }
+
+        float[] tp = transformedPositions;
+        float[] tn = transformedNormals;
+        int[] idx = indices;
+        int overlay = OverlayTexture.NO_OVERLAY;
+        int end = first + count;
+        for (int i = first; i < end; i += 3) {
+            int a = idx[i];
+            int b = idx[i + 1];
+            int c = idx[i + 2];
+            outlineVertex(consumer, tp, tn, a, offset, color, overlay, packedLight);
+            outlineVertex(consumer, tp, tn, c, offset, color, overlay, packedLight);
+            outlineVertex(consumer, tp, tn, b, offset, color, overlay, packedLight);
+            outlineVertex(consumer, tp, tn, b, offset, color, overlay, packedLight);
+        }
+    }
+
+    private static void outlineVertex(VertexConsumer consumer, float[] tp, float[] tn, int v, float offset,
+                                      int color, int overlay, int light) {
+        int p = v * 3;
+        float nx = tn[p], ny = tn[p + 1], nz = tn[p + 2];
+        consumer.addVertex(tp[p] + nx * offset, tp[p + 1] + ny * offset, tp[p + 2] + nz * offset,
+                color, 0.5f, 0.5f, overlay, light, -nx, -ny, -nz);
     }
 
     private static void vertex(VertexConsumer consumer, float[] tp, float[] tn, float[] uv,
