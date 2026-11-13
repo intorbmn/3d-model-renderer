@@ -203,7 +203,20 @@ public class PerformanceHud {
         } catch (Exception ignored) {
             gpuVendor = GpuVendor.UNKNOWN;
         }
-        while (GL11.glGetError() != GL11.GL_NO_ERROR) {
+        drainGlErrors();
+    }
+
+    /**
+     * 清空 GL 错误队列。限制次数，并容忍没有 GL 上下文的情况（26.3 自带 Vulkan 后端），
+     * 避免调试 HUD 因为一次 glGetError 抛异常或在丢失上下文时死循环而拖垮渲染线程。
+     */
+    private static void drainGlErrors() {
+        try {
+            for (int i = 0; i < 16 && GL11.glGetError() != GL11.GL_NO_ERROR; i++) {
+                // 丢弃
+            }
+        } catch (RuntimeException ignored) {
+            // 当前线程没有 OpenGL 上下文：无事可清。
         }
     }
 
@@ -222,8 +235,7 @@ public class PerformanceHud {
                     result = (long) info[0] * 1024L;
                 }
             }
-            while (GL11.glGetError() != GL11.GL_NO_ERROR) {
-            }
+            drainGlErrors();
             return result;
         } catch (Exception ignored) {
             return 0L;
