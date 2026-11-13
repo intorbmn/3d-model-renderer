@@ -201,7 +201,8 @@ public class ItemRenderHelper {
     private static String getHandState(AbstractClientPlayer player, InteractionHand hand) {
         if (hand == player.getUsedItemHand() && player.isUsingItem()) {
             return "using";
-        } else if (hand == player.swingingArm && player.swinging) {
+        } else if (player.isSwinging() && player.getCurrentSwing() != null
+                && player.getCurrentSwing().hand() == hand) {
             return "swinging";
         }
         return "idle";

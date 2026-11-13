@@ -136,7 +136,7 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
         if (screen != null) {
             Minecraft.getInstance().gui.setScreen(screen);
         } else {
-            Minecraft.getInstance().gui.getChat().addMessage(
+            Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
                     Component.translatable("message.mmdskin.player.model_not_found"));
         }
     }
@@ -157,7 +157,7 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
                 return;
             }
         }
-        Minecraft.getInstance().gui.getChat().addMessage(
+        Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
                 Component.translatable("message.mmdskin.mod_settings.not_initialized"));
     }
 

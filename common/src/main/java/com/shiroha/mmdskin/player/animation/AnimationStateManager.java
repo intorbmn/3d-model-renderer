@@ -6,7 +6,13 @@ import com.shiroha.mmdskin.player.sync.PlayerActionSyncService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.equine.Donkey;
+import net.minecraft.world.entity.animal.equine.Horse;
+import net.minecraft.world.entity.animal.equine.Mule;
+import net.minecraft.world.entity.animal.equine.SkeletonHorse;
+import net.minecraft.world.entity.animal.equine.ZombieHorse;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUseAnimation;
 
@@ -57,7 +63,7 @@ public class AnimationStateManager {
 
     private static EntityAnimState.State resolveRidingState(AbstractClientPlayer player) {
         var vehicle = player.getVehicle();
-        if (vehicle != null && isHorselike(vehicle.getType()) && hasMovement(player)) {
+        if (vehicle != null && isHorselike(vehicle) && hasMovement(player)) {
             return EntityAnimState.State.OnHorse;
         }
         return EntityAnimState.State.Ride;
@@ -91,14 +97,14 @@ public class AnimationStateManager {
         if (player.getUsedItemHand() == InteractionHand.MAIN_HAND && player.isUsingItem()) {
             updateUsingItemAnimation(model, player.getItemInHand(InteractionHand.MAIN_HAND),
                     EntityAnimState.State.ItemRight, "Right", 1);
-        } else if (player.swingingArm == InteractionHand.MAIN_HAND && player.swinging) {
+        } else if (isSwingingWith(player, InteractionHand.MAIN_HAND)) {
             String itemId = getItemId(player.getItemInHand(InteractionHand.MAIN_HAND));
             applyCustomItemAnimation(model, EntityAnimState.State.SwingRight, itemId,
                     "Right", ItemUseAnimation.NONE, "swinging", 1);
         } else if (player.getUsedItemHand() == InteractionHand.OFF_HAND && player.isUsingItem()) {
             updateUsingItemAnimation(model, player.getItemInHand(InteractionHand.OFF_HAND),
                     EntityAnimState.State.ItemLeft, "Left", 1);
-        } else if (player.swingingArm == InteractionHand.OFF_HAND && player.swinging) {
+        } else if (isSwingingWith(player, InteractionHand.OFF_HAND)) {
             String itemId = getItemId(player.getItemInHand(InteractionHand.OFF_HAND));
             applyCustomItemAnimation(model, EntityAnimState.State.SwingLeft, itemId,
                     "Left", ItemUseAnimation.NONE, "swinging", 1);
@@ -161,10 +167,16 @@ public class AnimationStateManager {
         return mc.player != null && mc.player.getUUID().equals(player.getUUID());
     }
 
-    private static boolean isHorselike(EntityType<?> type) {
-        return type == EntityType.HORSE || type == EntityType.DONKEY
-                || type == EntityType.MULE || type == EntityType.SKELETON_HORSE
-                || type == EntityType.ZOMBIE_HORSE;
+    private static boolean isHorselike(Entity vehicle) {
+        return vehicle instanceof Horse || vehicle instanceof Donkey
+                || vehicle instanceof Mule || vehicle instanceof SkeletonHorse
+                || vehicle instanceof ZombieHorse;
+    }
+
+    /** LivingEntity.swingingArm/swinging were replaced by getCurrentSwing(), which carries the hand. */
+    private static boolean isSwingingWith(LivingEntity entity, InteractionHand hand) {
+        LivingEntity.SwingDescription swing = entity.getCurrentSwing();
+        return entity.isSwinging() && swing != null && swing.hand() == hand;
     }
 
     private static void changeAnimationOnce(ManagedModel model, EntityAnimState.State targetState, int layer) {
