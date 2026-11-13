@@ -72,3 +72,26 @@ code net.minecraft.client.Camera 'void update[(]|void alignWithEntity[(]|float c
 code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities[(]' 80
 code net.minecraft.client.Minecraft 'void pick[(]' 60
 dump net.minecraft.client.input.MouseButtonInfo 20
+
+# --- Classes the submit-based render backend depends on ----------------------------------------
+dump com.mojang.blaze3d.platform.NativeImage 110
+dump 'com.mojang.blaze3d.platform.NativeImage$Format' 30
+dump net.minecraft.client.renderer.texture.DynamicTexture 30
+dump net.minecraft.client.renderer.texture.AbstractTexture 30
+dump net.minecraft.client.renderer.texture.TextureManager 50
+dump net.minecraft.client.renderer.texture.OverlayTexture 30
+dump net.minecraft.client.renderer.entity.EntityRenderer 70
+dump net.minecraft.client.renderer.entity.EntityRenderDispatcher 70
+dump net.minecraft.client.renderer.entity.LivingEntityRenderer 80
+dump net.minecraft.client.renderer.entity.player.AvatarRenderer 70
+dump net.minecraft.client.renderer.entity.state.HumanoidRenderState 60
+dump net.minecraft.client.renderer.FirstPersonHandsAndItemsRenderer 60
+dump net.minecraft.client.player.FirstPersonHandsAndItems 40
+dump net.minecraft.client.gui.render.pip.GuiEntityRenderer 40
+dump net.minecraft.client.renderer.rendertype.RenderSetup 60
+code net.minecraft.client.renderer.entity.EntityRenderer 'createRenderState[(]net' 40
+code net.minecraft.client.renderer.entity.EntityRenderDispatcher 'void submit[(]|extractEntity[(]' 80
+code net.minecraft.client.renderer.rendertype.RenderTypes 'entityCutout[(]|entityTranslucent[(]|entityCutoutCull[(]' 60
+code net.minecraft.client.renderer.extract.LevelExtractor 'void extractVisibleEntities[(]' 120
+echo "##### classes: light / gui entity / pip"
+unzip -Z1 "$JAR" | grep -E '(LightCoords|LightTexture|Lightmap|GuiEntity|PictureInPicture|InventoryScreen)[A-Za-z$]*\.class$' | head -30
