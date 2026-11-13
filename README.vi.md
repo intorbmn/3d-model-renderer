@@ -19,6 +19,9 @@ Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng mode
 | Minecraft 26.3, Fabric | Biên dịch và chạy được |
 | Model PMX/PMD | Hiển thị được |
 | Model GLB/glTF thường | Nạp được; có animation nếu nhận diện được bộ xương (xem bên dưới) |
+| Card model (`3d-skin/Cards/*.png`, tạo bằng [studio](https://github.com/intorbmn/3d-model-renderer-studio)) | Nạp được, xếp đầu và đánh dấu nổi bật trong danh sách chọn model; cần test trong game |
+| Vật lý: rigid body của PMX, spring bone của VRM/GLB/glTF kèm vùng va chạm | Chạy được; phản ứng khi đi, nhảy, xoay người; cần test trong game |
+| Cầm vật phẩm với model GLB/glTF | Đã sửa góc xoay tay lúc nghỉ; cần test trong game |
 | Góc nhìn thứ nhất (ẩn tay gốc) | Đã port, cần test trong game |
 | Viền toon (outline) | Đã port, cần test trong game |
 | Tô bóng toon, GPU skinning | Chưa port |
@@ -26,6 +29,15 @@ Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng mode
 | Forge / NeoForge, bản Minecraft cũ | Không hỗ trợ trong repo này |
 
 Mức độ đầy đủ so với bản gốc và kế hoạch các tính năng sắp tới: [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Test bản này
+
+Những thay đổi từ bản test trước, cần kiểm tra trong game:
+
+- **Vật lý theo người chơi.** Tóc, váy, ngực phải giật lại khi bắt đầu hoặc dừng di chuyển, bị kéo về sau khi đi hoặc chạy, văng ra khi xoay người, và không bay loạn khi dịch chuyển. Độ mạnh: mục *Physics inertia* trong cài đặt mod (0,5 = đúng như thật).
+- **Model có spring bone (VRM, card GLB/glTF)**: vùng va chạm đã đúng kích thước, tóc không còn xuyên vào đầu và người.
+- **Card**: bỏ card tạo từ studio vào `3d-skin/Cards/`, mở danh sách chọn model (card nằm đầu, có nhãn **CARD** màu hồng), chọn card và xem kích thước, màu, nhóm vật lý.
+- **Cầm vật phẩm** với model GLB/glTF: kiếm phải cầm lưỡi hướng ra trước, không bị ngửa nằm ngang.
 
 ## Cài đặt
 
