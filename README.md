@@ -34,7 +34,7 @@ Feature parity with the original mod and the plan for upcoming work are tracked 
 
 Things changed since the last test build, worth checking in game:
 
-- **Physics follows the player.** Hair, skirts and bust should lag when you start or stop moving, trail back while walking or sprinting, swing out when you turn, and not fly off when you teleport. Strength: *Physics inertia* in the mod settings (0.5 = physical).
+- **Physics follows the player.** Hair, skirts and bust should lag when you start or stop moving, trail back while walking or sprinting, swing out when you turn, and not fly off when you teleport. Strength: *Inertia Strength* in the mod settings (50 = realistic, the default).
 - **Spring-bone models (VRM, and GLB/glTF cards)**: colliders now have the right size, so hair should stay outside the head and body.
 - **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups.
 - **Held items** on GLB/glTF models: a sword should be held edge-forward, not lying flat.

@@ -34,7 +34,7 @@ Mức độ đầy đủ so với bản gốc và kế hoạch các tính năng 
 
 Những thay đổi từ bản test trước, cần kiểm tra trong game:
 
-- **Vật lý theo người chơi.** Tóc, váy, ngực phải giật lại khi bắt đầu hoặc dừng di chuyển, bị kéo về sau khi đi hoặc chạy, văng ra khi xoay người, và không bay loạn khi dịch chuyển. Độ mạnh: mục *Physics inertia* trong cài đặt mod (0,5 = đúng như thật).
+- **Vật lý theo người chơi.** Tóc, váy, ngực phải giật lại khi bắt đầu hoặc dừng di chuyển, bị kéo về sau khi đi hoặc chạy, văng ra khi xoay người, và không bay loạn khi dịch chuyển. Độ mạnh: mục *Inertia Strength* trong cài đặt mod (50 = đúng như thật, mặc định).
 - **Model có spring bone (VRM, card GLB/glTF)**: vùng va chạm đã đúng kích thước, tóc không còn xuyên vào đầu và người.
 - **Card**: bỏ card tạo từ studio vào `3d-skin/Cards/`, mở danh sách chọn model (card nằm đầu, có nhãn **CARD** màu hồng), chọn card và xem kích thước, màu, nhóm vật lý.
 - **Cầm vật phẩm** với model GLB/glTF: kiếm phải cầm lưỡi hướng ra trước, không bị ngửa nằm ngang.
