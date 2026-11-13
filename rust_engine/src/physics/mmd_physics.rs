@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use glam::{Mat3, Mat4, Vec3};
+use glam::{Mat4, Vec3};
 
 use mmd::pmx::joint::Joint as PmxJoint;
 use mmd::pmx::rigid_body::RigidBody as PmxRigidBody;
@@ -38,8 +38,8 @@ pub struct MMDPhysics {
     /// 动态骨骼变换结果缓冲区（复用内存）
     dynamic_bone_buf: Vec<(usize, Mat4)>,
 
-    /// 上一帧模型世界位置（用于计算移动速度实现惯性）
-    prev_model_position: Option<Vec3>,
+    /// The model's movement in the world, for inertia.
+    frame_motion: crate::physics::FrameMotion,
 }
 
 impl MMDPhysics {
@@ -64,7 +64,7 @@ impl MMDPhysics {
             max_substep_count: config.max_substep_count,
             dynamic_bone_indices: HashSet::new(),
             dynamic_bone_buf: Vec::new(),
-            prev_model_position: None,
+            frame_motion: crate::physics::FrameMotion::default(),
         })
     }
 
@@ -221,13 +221,9 @@ impl MMDPhysics {
         }
     }
 
-    /// 同步运动学刚体并传递模型移动速度（实现惯性）
-    ///
-    /// 原理：物理在模型局部空间运行，角色世界移动对物理不可见。
-    /// 第一步：同步 FollowBone 刚体到骨骼位置。
-    /// 第二步：计算模型世界速度，转换到物理空间后取反，
-    ///        对动态刚体施加 F = m * (-v_local) / dt，
-    ///        产生与移动方向相反的惯性力（头发/裙子自然后拽）。
+    /// Moves the kinematic bodies to their bones, then pushes the dynamic bodies with the model's
+    /// own movement in the world (see `frame_motion`): physics runs in model space and would not
+    /// see the player walking, jumping or turning otherwise.
     pub fn sync_bodies_with_model_velocity(
         &mut self,
         bone_transforms: &[Mat4],
@@ -235,65 +231,30 @@ impl MMDPhysics {
         model_transform: Mat4,
     ) {
         let config = get_config();
-        let dt = delta_time.max(0.001);
-        let curr_pos = model_transform.w_axis.truncate();
+        let sample = self.frame_motion.update(model_transform, delta_time);
 
-        // 计算模型世界速度
-        let model_velocity = if let Some(prev_pos) = self.prev_model_position {
-            (curr_pos - prev_pos) / dt
-        } else {
-            Vec3::ZERO
-        };
-        self.prev_model_position = Some(curr_pos);
-
-        // 第一步：同步运动学刚体位置
         self.sync_bodies(bone_transforms);
 
-        // 第二步：给动态刚体施加惯性力
-        if config.inertia_strength > 0.0 && model_velocity.length_squared() > 1e-8 {
-            // 钳制世界速度（20 blocks/s 覆盖疾跑+速度药水，超出视为传送）
-            let speed_sq = model_velocity.length_squared();
-            let max_speed = 20.0_f32;
-            let world_vel = if speed_sq > max_speed * max_speed {
-                model_velocity * (max_speed / speed_sq.sqrt())
-            } else {
-                model_velocity
-            };
-
-            // 世界速度 → 模型局部空间（R^T * v_world）
-            let rot_inv = Mat3::from_mat4(model_transform).transpose();
-            let local_vel = rot_inv * world_vel;
-
-            // 模型局部空间惯性（Z-flip 坐标系中 Z 方向需取反）
-            let inertia_vel = Vec3::new(
-                -local_vel.x * config.inertia_strength,
-                -local_vel.y * config.inertia_strength,
-                local_vel.z * config.inertia_strength,
-            );
-
-            // 最大加速度 = max_linear_velocity * physics_fps
-            // 确保单个物理子步内速度增量不超过 max_linear_velocity
-            let max_accel = config.max_linear_velocity * self.fps;
-
-            // F = m * v / dt，再钳制力大小防止衣服拉伸
-            for rb_data in &self.rigid_bodies {
-                if rb_data.physics_mode == PhysicsMode::FollowBone {
-                    continue;
-                }
-                if let Some(ref body) = rb_data.bullet_body {
-                    let mass = body.get_mass();
-                    if mass > 0.0 {
-                        let mut force = inertia_vel * mass / dt;
-                        // 钳制力：限制加速度上限
-                        let max_force = max_accel * mass;
-                        let force_sq = force.length_squared();
-                        if force_sq > max_force * max_force {
-                            force *= max_force / force_sq.sqrt();
-                        }
-                        body.apply_central_force(force.x, force.y, force.z);
-                    }
-                }
+        if config.inertia_strength <= 0.0 || sample == crate::physics::FrameSample::default() {
+            return;
+        }
+        for rb_data in &self.rigid_bodies {
+            if rb_data.physics_mode == PhysicsMode::FollowBone {
+                continue;
             }
+            let Some(ref body) = rb_data.bullet_body else {
+                continue;
+            };
+            let mass = body.get_mass();
+            if mass <= 0.0 {
+                continue;
+            }
+            // Bullet works in MMD's left-handed space: flip Z to get the model-space position,
+            // and flip the resulting acceleration back.
+            let p = body.get_transform().w_axis;
+            let accel = sample.point_accel(Vec3::new(p.x, p.y, -p.z), config.inertia_strength);
+            let force = Vec3::new(accel.x, accel.y, -accel.z) * mass;
+            body.apply_central_force(force.x, force.y, force.z);
         }
     }
 
@@ -392,7 +353,7 @@ impl MMDPhysics {
 
     /// 重置物理系统
     pub fn reset(&mut self) {
-        self.prev_model_position = None;
+        self.frame_motion.reset();
         for rb_data in &self.rigid_bodies {
             if let Some(ref body) = rb_data.bullet_body {
                 body.set_transform(rb_data.initial_transform);

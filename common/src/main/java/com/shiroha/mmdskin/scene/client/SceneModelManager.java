@@ -149,9 +149,10 @@ public final class SceneModelManager {
             return;
         }
 
-        float posX = (float) (placeX * MODEL_SCALE);
-        float posY = (float) (placeY * MODEL_SCALE);
-        float posZ = (float) (placeZ * MODEL_SCALE);
+        // In model units (blocks / scale), as the physics expects.
+        float posX = physicsCoordinate(placeX, MODEL_SCALE);
+        float posY = physicsCoordinate(placeY, MODEL_SCALE);
+        float posZ = physicsCoordinate(placeZ, MODEL_SCALE);
         scenePort.setModelPositionAndYaw(modelHandle, posX, posY, posZ, placeYawRadians);
 
         float offsetX = (float) (placeX - entityRenderX);
@@ -201,5 +202,14 @@ public final class SceneModelManager {
         return model != null
                 && model.modelInstance() != null
                 && model.modelInstance().getModelHandle() != 0L;
+    }
+
+    /**
+     * A world coordinate in model units for the physics, wrapped every 1024 blocks: physics only
+     * needs the movement between frames, and float precision far from spawn would turn into jitter.
+     * The wrap looks like a teleport, which the physics ignores.
+     */
+    private static float physicsCoordinate(double blocks, float modelScale) {
+        return (float) (Math.floorMod((long) Math.floor(blocks), 1024L) + (blocks - Math.floor(blocks))) / modelScale;
     }
 }

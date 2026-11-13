@@ -108,7 +108,19 @@ impl SpringBoneRuntime {
         Self { chains, colliders }
     }
 
+    #[allow(dead_code)]
     pub fn process(&mut self, bones: &mut BoneManager, delta_time: f32) {
+        self.process_with_motion(bones, delta_time, |_| Vec3::ZERO);
+    }
+
+    /// Like `process`, with an extra acceleration (model units/s²) for a point in model space:
+    /// the push from the model's own movement in the world (see `physics::frame_motion`).
+    pub fn process_with_motion(
+        &mut self,
+        bones: &mut BoneManager,
+        delta_time: f32,
+        external: impl Fn(Vec3) -> Vec3,
+    ) {
         if self.chains.is_empty() || delta_time <= 0.0 {
             return;
         }
@@ -131,7 +143,8 @@ impl SpringBoneRuntime {
                     + (current_tail - prev_tail) * (1.0 - joint.drag_force)
                     + (parent_rotation * joint.init_local_rotation * joint.bone_axis)
                         * (joint.stiffness * delta_time)
-                    + joint.gravity_dir * (joint.gravity_power * delta_time);
+                    + joint.gravity_dir * (joint.gravity_power * delta_time)
+                    + external(current_tail) * (delta_time * delta_time);
 
                 let direction = (next_tail - bone_position).normalize_or_zero();
                 if direction.length_squared() <= 1e-6 {

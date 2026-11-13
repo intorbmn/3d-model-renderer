@@ -23,7 +23,7 @@ fn build_parent_map(document: &gltf::Document) -> HashMap<usize, usize> {
     parent_map
 }
 
-fn compute_node_world_transforms(document: &gltf::Document) -> HashMap<usize, Mat4> {
+pub(crate) fn compute_node_world_transforms(document: &gltf::Document) -> HashMap<usize, Mat4> {
     let mut world_transforms = HashMap::new();
     let parent_map = build_parent_map(document);
     let nodes: Vec<_> = document.nodes().collect();

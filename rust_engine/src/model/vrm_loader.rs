@@ -1,6 +1,6 @@
 //! VRM 模型加载入口
 
-use glam::{Vec2, Vec3};
+use glam::{Mat4, Quat, Vec2, Vec3};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -11,6 +11,65 @@ use crate::{MmdError, Result};
 pub struct LoadedVrmModel {
     pub model: MmdModel,
     pub extensions: vrm_extensions::VrmExtensions,
+}
+
+/// The rest-pose world rotation of every node: from the inverse bind matrices for joints (the pose
+/// the skeleton is built from), from the node hierarchy for the rest.
+fn node_rest_rotations(
+    document: &gltf::Document,
+    skin: &gltf::Skin,
+    buffers: &[gltf::buffer::Data],
+) -> HashMap<usize, Quat> {
+    let mut rotations: HashMap<usize, Quat> = vrm_skeleton::compute_node_world_transforms(document)
+        .into_iter()
+        .map(|(node, m)| (node, m.to_scale_rotation_translation().1))
+        .collect();
+    let reader = skin.reader(|buffer| Some(&buffers[buffer.index()]));
+    if let Some(ibms) = reader.read_inverse_bind_matrices() {
+        for (joint, ibm) in skin.joints().zip(ibms) {
+            let bind = Mat4::from_cols_array_2d(&ibm).inverse();
+            let rotation = bind.to_scale_rotation_translation().1;
+            if rotation.is_finite() {
+                rotations.insert(joint.index(), rotation);
+            }
+        }
+    }
+    rotations
+}
+
+/// Brings spring-bone data into the skeleton's space: scaled to model units, with the X/Z flip
+/// the mesh got, and collider offsets turned from the collider bone's own axes into model axes
+/// (the runtime skeleton's bones are unrotated in the rest pose, like PMX bones).
+fn convert_spring_space(
+    data: &mut vrm_extensions::SpringBoneData,
+    rest_rotations: &HashMap<usize, Quat>,
+    unit_scale: f32,
+    xz_sign: f32,
+) {
+    let flip = |v: Vec3| Vec3::new(xz_sign * v.x, v.y, xz_sign * v.z);
+    for collider in &mut data.colliders {
+        let rotation = rest_rotations.get(&collider.node).copied().unwrap_or(Quat::IDENTITY);
+        let convert = |v: [f32; 3]| (flip(rotation * Vec3::from_array(v)) * unit_scale).to_array();
+        collider.shape = match collider.shape {
+            vrm_extensions::ColliderShape::Sphere { offset, radius } => {
+                vrm_extensions::ColliderShape::Sphere { offset: convert(offset), radius: radius * unit_scale }
+            }
+            vrm_extensions::ColliderShape::Capsule { offset, tail, radius } => vrm_extensions::ColliderShape::Capsule {
+                offset: convert(offset),
+                tail: convert(tail),
+                radius: radius * unit_scale,
+            },
+        };
+    }
+    for spring in &mut data.springs {
+        for joint in &mut spring.joints {
+            // UniVRM moves the tail by stiffness and gravity in metres per second.
+            joint.hit_radius *= unit_scale;
+            joint.stiffness *= unit_scale;
+            joint.gravity_power *= unit_scale;
+            joint.gravity_dir = flip(Vec3::from_array(joint.gravity_dir)).normalize_or_zero().to_array();
+        }
+    }
 }
 
 fn remap_extensions_to_runtime_bones(
@@ -305,6 +364,25 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
             .collect();
         vrm_ext.humanoid.map = super::humanoid_inference::resolve_humanoid(path, &joints);
     }
+    // Physics groups from a card (physics.json) replace the model's own spring bones.
+    let node_by_name: HashMap<String, usize> = document
+        .nodes()
+        .filter_map(|node| node.name().map(|name| (name.to_string(), node.index())))
+        .collect();
+    if let Some((springs, groups)) = super::physics_sidecar::load(path, &node_by_name) {
+        for group in &groups {
+            log::info!("physics group '{}' ({}): {} chain(s)", group.name, group.kind, group.chains);
+        }
+        vrm_ext.spring_bones = springs;
+    }
+    // Spring-bone data is in the file's units and axes; the skeleton is not.
+    convert_spring_space(
+        &mut vrm_ext.spring_bones,
+        &node_rest_rotations(&document, &skin, &buffers),
+        unit_scale,
+        xz_sign,
+    );
+
     let bone_manager =
         vrm_skeleton::build_skeleton(
             &document,

@@ -116,6 +116,8 @@ pub struct MmdModel {
 
     /// VRM 模型标志（影响坐标系处理）
     is_vrm: bool,
+    /// The model's movement in the world, for spring-bone inertia.
+    pub(crate) spring_frame_motion: crate::physics::FrameMotion,
     /// Inverse rest rotation of the right and left hand bones (identity for PMX/PMD).
     hand_rest_inverse: [Quat; 2],
     vrm_runtime_state: Option<Box<VrmModelRuntimeState>>,
@@ -270,6 +272,7 @@ impl MmdModel {
             blink_morph_index: None,
             debug_logged: false,
             is_vrm: false,
+            spring_frame_motion: crate::physics::FrameMotion::default(),
             hand_rest_inverse: [Quat::IDENTITY; 2],
             vrm_runtime_state: None,
             model_transform: Mat4::IDENTITY,
@@ -2437,6 +2440,7 @@ impl MmdModel {
 
     /// 重置物理系统
     pub fn reset_physics(&mut self) {
+        self.spring_frame_motion.reset();
         if let Some(ref mut physics) = self.physics {
             physics.reset();
         }

@@ -35,6 +35,8 @@ public final class ModelCardFile {
     public static final int VERSION = 1;
     /** Written next to the extracted model; read by the renderer for tints and scale. */
     public static final String SETTINGS_FILE = ".card-settings.json";
+    /** Physics groups of the card, read by the engine for glTF/VRM models. */
+    public static final String PHYSICS_FILE = "physics.json";
     private static final byte[] MAGIC = "3DMRCARD".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_MAGIC = "3DMR-END".getBytes(StandardCharsets.US_ASCII);
     private static final List<String> MODEL_TYPES = List.of("pmx", "pmd", "vrm", "glb", "gltf");
@@ -175,6 +177,11 @@ public final class ModelCardFile {
                 Path modelDir = temp.resolve(modelPath).getParent();
                 if (modelDir != null && !modelDir.equals(temp)) {
                     Files.writeString(modelDir.resolve(SETTINGS_FILE), settings.toString(), StandardCharsets.UTF_8);
+                }
+                // The card's physics groups (hair, clothing, body, custom) go where the engine
+                // looks for them; they take priority over the model's own spring bones.
+                if (manifest.has("physics") && manifest.get("physics").isJsonObject() && modelDir != null) {
+                    Files.writeString(modelDir.resolve(PHYSICS_FILE), manifest.get("physics").toString(), StandardCharsets.UTF_8);
                 }
                 try {
                     Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);

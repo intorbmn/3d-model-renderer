@@ -72,9 +72,10 @@ public final class LivingEntityModelStateHelper {
             renderOrigin = renderOrigin.add(FirstPersonManager.getLocalVrModelRootOffset(player));
         }
 
-        float posX = (float) (renderOrigin.x * MODEL_SCALE);
-        float posY = (float) (renderOrigin.y * MODEL_SCALE);
-        float posZ = (float) (renderOrigin.z * MODEL_SCALE);
+        // Physics measures the model's movement from this position, in model units (blocks / scale).
+        float posX = physicsCoordinate(renderOrigin.x, MODEL_SCALE);
+        float posY = physicsCoordinate(renderOrigin.y, MODEL_SCALE);
+        float posZ = physicsCoordinate(renderOrigin.z, MODEL_SCALE);
         float bodyYaw = entity instanceof Player player
                 ? resolveBodyYaw(player, tickDelta)
                 : Mth.rotLerp(tickDelta, entity.yBodyRotO, entity.yBodyRot) * ((float) Math.PI / 180F);
@@ -99,5 +100,14 @@ public final class LivingEntityModelStateHelper {
             return vrBodyYaw;
         }
         return Mth.rotLerp(tickDelta, player.yBodyRotO, player.yBodyRot) * ((float) Math.PI / 180F);
+    }
+
+    /**
+     * A world coordinate in model units for the physics, wrapped every 1024 blocks: physics only
+     * needs the movement between frames, and float precision far from spawn would turn into jitter.
+     * The wrap looks like a teleport, which the physics ignores.
+     */
+    private static float physicsCoordinate(double blocks, float modelScale) {
+        return (float) (Math.floorMod((long) Math.floor(blocks), 1024L) + (blocks - Math.floor(blocks))) / modelScale;
     }
 }

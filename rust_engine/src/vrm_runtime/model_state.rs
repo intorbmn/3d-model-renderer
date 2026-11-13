@@ -75,8 +75,11 @@ impl VrmModelRuntimeState {
 
     pub(crate) fn process_post_ik(&mut self, model: &mut MmdModel, delta_time: f32) {
         self.constraints.process(&mut model.bone_manager);
-        self.spring_bone
-            .process(&mut model.bone_manager, delta_time);
+        let sample = model.spring_frame_motion.update(model.model_transform(), delta_time);
+        let strength = crate::physics::get_config().inertia_strength;
+        self.spring_bone.process_with_motion(&mut model.bone_manager, delta_time, |point| {
+            sample.point_accel(point, strength)
+        });
     }
 
     pub(crate) fn refresh_output(&mut self, model: &mut MmdModel) {
