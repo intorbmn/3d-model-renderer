@@ -12,6 +12,7 @@ import com.shiroha.mmdskin.player.port.VrRuntimePort;
 import com.shiroha.mmdskin.player.runtime.FirstPersonManager;
 import com.shiroha.mmdskin.player.runtime.MmdSkinRendererPlayerHelper;
 import com.shiroha.mmdskin.model.runtime.ModelInstance;
+import com.shiroha.mmdskin.render.backend.submit.RenderSubmitContext;
 import com.shiroha.mmdskin.render.scene.RenderScene;
 import com.shiroha.mmdskin.render.scene.MutableRenderPose;
 import com.shiroha.mmdskin.render.backend.BaseModelInstance;
@@ -20,6 +21,8 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 
 /** 文件职责：协调玩家模型在普通视角、第一人称与 VR 场景中的渲染切换。 */
 final class PlayerModelRenderCoordinator {
+
+    private static final org.joml.Vector3f reusableZero = new org.joml.Vector3f();
 
     private PlayerModelRenderCoordinator() {
     }
@@ -42,10 +45,12 @@ final class PlayerModelRenderCoordinator {
         ModelConfigData modelConfig = ModelConfigManager.getConfig(selection.selectedModel());
         float combinedScale = size[0] * modelConfig.modelScale;
         long modelHandle = model.getModelHandle();
-        if (selection.isLocalPlayer()) {
+        // A GUI preview must not disturb the first-person state of the world render.
+        boolean guiPass = RenderSubmitContext.isGuiPass();
+        if (selection.isLocalPlayer() && !guiPass) {
             FirstPersonManager.preRender(modelHandle, combinedScale, true);
         }
-        boolean isFirstPerson = !isVr && selection.isLocalPlayer() && FirstPersonManager.isActive();
+        boolean isFirstPerson = !guiPass && !isVr && selection.isLocalPlayer() && FirstPersonManager.isActive();
 
         if (!isVr) {
             AnimationStateManager.updateAnimationState(player, modelData);
@@ -53,12 +58,16 @@ final class PlayerModelRenderCoordinator {
         consumePendingSignals(player, modelData, selection.isLocalPlayer());
 
         MutableRenderPose params = PlayerRenderHelper.calculateMutableRenderPose(player, modelData, tickDelta);
-        boolean needsPostRenderSync = selection.isLocalPlayer();
+        boolean needsPostRenderSync = selection.isLocalPlayer() && !guiPass;
 
         matrixStack.pushPose();
         try {
-            if (InventoryRenderHelper.isInventoryScreen()) {
-                InventoryRenderHelper.renderInInventory(player, model, entityYaw, tickDelta, matrixStack, packedLight, size);
+            if (guiPass) {
+                // GUI preview (inventory screen): Minecraft has already set up the preview pose and
+                // passes the facing it wants as entityYaw, so only the inventory scale is applied here.
+                matrixStack.scale(size[1], size[1], size[1]);
+                reusableZero.zero();
+                model.render(player, entityYaw, 0.0f, reusableZero, tickDelta, matrixStack, packedLight, RenderScene.INVENTORY);
             } else {
                 matrixStack.scale(size[0], size[0], size[0]);
                 RenderScene context = isFirstPerson ? RenderScene.FIRST_PERSON : RenderScene.WORLD;

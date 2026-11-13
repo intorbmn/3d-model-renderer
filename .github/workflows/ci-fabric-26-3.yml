@@ -194,3 +194,49 @@ jobs:
             common/build/reports/**
             fabric/build/reports/**
           if-no-files-found: ignore
+
+  # Builds a jar that can be dropped into a 26.3 Fabric instance for in-game testing. The native
+  # engine is built for the runner's platform and bundled, so there is one jar per operating system.
+  build-jar:
+    name: Build test jar (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows-x64
+          - os: ubuntu-latest
+            label: linux-x64
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Rust engine and Fabric jar
+        shell: bash
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :fabric:build -x test --no-daemon --stacktrace
+
+      - name: Upload test jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmdskin-fabric-26.3-${{ matrix.label }}
+          path: |
+            fabric/build/libs/*.jar
+            !fabric/build/libs/*-sources.jar
+          if-no-files-found: error

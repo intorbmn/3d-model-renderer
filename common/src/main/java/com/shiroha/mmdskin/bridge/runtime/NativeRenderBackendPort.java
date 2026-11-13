@@ -61,5 +61,10 @@ public interface NativeRenderBackendPort extends NativeModelPort, NativeModelLoa
 
     int getSubMeshCount(long modelHandle);
 
+    /** Diffuse colour of a material as {r, g, b, a}, or null when it is unavailable. */
+    default float[] getMaterialDiffuse(long modelHandle, int materialIndex) {
+        return null;
+    }
+
     int batchGetSubMeshData(long modelHandle, ByteBuffer targetBuffer);
 }

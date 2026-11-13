@@ -301,6 +301,34 @@ pub struct VrmExtensions {
     pub node_constraints: Vec<NodeConstraint>,
 }
 
+impl VrmExtensions {
+    /// Extensions for a plain glTF/GLB file that carries no VRM metadata: no humanoid mapping,
+    /// no expressions, no spring bones. The model still loads and renders; humanoid-driven
+    /// features simply have nothing to act on.
+    pub fn generic(material_count: usize) -> Self {
+        Self {
+            version: VrmVersion::V1_0,
+            humanoid: HumanoidMapping::default(),
+            expressions: VrmExpressions::default(),
+            mtoon_materials: vec![None; material_count],
+            spring_bones: SpringBoneData::default(),
+            first_person: FirstPersonConfig::default(),
+            look_at: None,
+            node_constraints: Vec::new(),
+        }
+    }
+}
+
+/// Returns true when the document declares a VRM 0.x or VRM 1.0 root extension.
+pub fn has_vrm_extension(document: &gltf::Document) -> bool {
+    document
+        .as_json()
+        .extensions
+        .as_ref()
+        .map(|ext| ext.others.contains_key("VRMC_vrm") || ext.others.contains_key("VRM"))
+        .unwrap_or(false)
+}
+
 pub fn parse_vrm_extensions(document: &gltf::Document) -> crate::Result<VrmExtensions> {
     let json_root = document.as_json();
     let extensions = json_root

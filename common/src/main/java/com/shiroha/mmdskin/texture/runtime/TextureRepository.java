@@ -246,8 +246,13 @@ public class TextureRepository {
     }
 
     public static class Texture {
+        /** Legacy OpenGL texture name; unused since textures are registered with Minecraft. */
         public int tex;
+        /** Id of the texture in Minecraft's texture manager, or null once it has been released. */
+        public volatile net.minecraft.resources.Identifier location;
         public boolean hasAlpha;
+        /** Whether the texture has enough partially transparent pixels to need blending. */
+        public boolean translucent;
         public long vramSize;
         final AtomicInteger refCount = new AtomicInteger(0);
         volatile long lastReleaseTime;

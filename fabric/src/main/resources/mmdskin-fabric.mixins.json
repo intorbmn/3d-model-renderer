@@ -12,7 +12,11 @@
     "MinecraftMixin",
     "MouseHandlerMixin",
     "KeyboardInputMixin",
-    "EntityMixin"
+    "EntityMixin",
+    "EntityRenderStateMixin",
+    "EntityRendererMixin",
+    "GuiEntityRendererMixin",
+    "LivingEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -100,7 +100,11 @@ public class ModelCatalogEntry {
     private static ModelCatalogEntry scanModelFolder(File modelDir) {
         FileFilter pmxFilter = file -> file.isFile() && file.getName().toLowerCase().endsWith(".pmx");
         FileFilter pmdFilter = file -> file.isFile() && file.getName().toLowerCase().endsWith(".pmd");
-        FileFilter vrmFilter = file -> file.isFile() && file.getName().toLowerCase().endsWith(".vrm");
+        // .glb is loaded through the same glTF path as .vrm; a plain GLB simply has no VRM metadata.
+        FileFilter vrmFilter = file -> {
+            String name = file.getName().toLowerCase();
+            return file.isFile() && (name.endsWith(".vrm") || name.endsWith(".glb"));
+        };
 
         File[] pmxFiles = modelDir.listFiles(pmxFilter);
         if (pmxFiles != null && pmxFiles.length > 0) {

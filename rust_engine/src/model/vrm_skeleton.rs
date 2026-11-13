@@ -8,7 +8,7 @@ use super::vrm_extensions::HumanoidMapping;
 use crate::skeleton::{BoneFlags, BoneLink, BoneSet, IkConfig, IkLink};
 
 /// VRM→PMX 单位缩放（1m → 12.5 PMX 单位）
-const VRM_TO_PMX_SCALE: f32 = 12.5;
+pub(crate) const VRM_TO_PMX_SCALE: f32 = 12.5;
 
 /// MMD 虚拟骨骼数量（全ての親 + センター + グルーブ）
 pub(crate) const VIRTUAL_BONE_COUNT: usize = 3;
@@ -66,6 +66,7 @@ pub(crate) fn build_skeleton(
     skin: &gltf::Skin,
     buffers: &[gltf::buffer::Data],
     humanoid_mapping: &HumanoidMapping,
+    unit_scale: f32,
 ) -> crate::Result<BoneSet> {
     let parent_map = build_parent_map(document);
 
@@ -89,6 +90,7 @@ pub(crate) fn build_skeleton(
         &joint_nodes,
         &ibms,
         &node_world_transforms,
+        unit_scale,
     );
 
     let mut bone_set = BoneSet::new();
@@ -124,7 +126,7 @@ pub(crate) fn build_skeleton(
             Vec3::new(-wt.col(3).x, wt.col(3).y, -wt.col(3).z)
         };
 
-        bone.initial_position = world_pos * VRM_TO_PMX_SCALE;
+        bone.initial_position = world_pos * unit_scale;
 
         if Some(joint_idx) == hips_joint_idx {
             bone.parent_index = 2; // グルーブ
@@ -269,6 +271,7 @@ fn find_hips_world_pos(
     joint_nodes: &[usize],
     ibms: &[Mat4],
     node_world_transforms: &HashMap<usize, Mat4>,
+    unit_scale: f32,
 ) -> Vec3 {
     for (&node_idx, vrm_name) in &humanoid_mapping.map {
         if vrm_name == "hips" {
@@ -287,7 +290,7 @@ fn find_hips_world_pos(
                         .unwrap_or(Mat4::IDENTITY);
                     Vec3::new(-wt.col(3).x, wt.col(3).y, -wt.col(3).z)
                 };
-                return world_pos * VRM_TO_PMX_SCALE;
+                return world_pos * unit_scale;
             }
         }
     }

@@ -342,6 +342,21 @@ public final class NativeRuntimeBridge implements
     }
 
     @Override
+    public float[] getMaterialDiffuse(long modelHandle, int materialIndex) {
+        // The native side returns a pointer to four floats in a thread-local buffer; read it at once.
+        long address = nativeFunc().GetMaterialDiffuse(modelHandle, materialIndex);
+        if (address == 0L) {
+            return null;
+        }
+        return new float[] {
+                org.lwjgl.system.MemoryUtil.memGetFloat(address),
+                org.lwjgl.system.MemoryUtil.memGetFloat(address + 4),
+                org.lwjgl.system.MemoryUtil.memGetFloat(address + 8),
+                org.lwjgl.system.MemoryUtil.memGetFloat(address + 12)
+        };
+    }
+
+    @Override
     public String getMaterialTexturePath(long modelHandle, int materialIndex) {
         return nativeFunc().GetMaterialTex(modelHandle, materialIndex);
     }

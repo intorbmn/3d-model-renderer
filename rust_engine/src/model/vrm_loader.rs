@@ -194,6 +194,24 @@ fn extract_textures(model_dir: &Path, images: &[gltf::image::Data]) -> Vec<Strin
     paths
 }
 
+/// 通用 glTF 的目标身高（PMX 单位）。常见 MMD 模型约 20 单位高（≈1.6 m）。
+const GENERIC_TARGET_HEIGHT: f32 = 20.0;
+
+/// 按顶点包围盒高度计算通用 glTF 的单位缩放；高度异常时退回 VRM 的米制缩放。
+fn generic_unit_scale(vertices: &[super::RuntimeVertex]) -> f32 {
+    let (min_y, max_y) = vertices
+        .iter()
+        .fold((f32::INFINITY, f32::NEG_INFINITY), |(lo, hi), v| {
+            (lo.min(v.position.y), hi.max(v.position.y))
+        });
+    let height = max_y - min_y;
+    if height.is_finite() && height > 1.0e-4 {
+        GENERIC_TARGET_HEIGHT / height
+    } else {
+        vrm_skeleton::VRM_TO_PMX_SCALE
+    }
+}
+
 /// 加载 VRM 模型，转换为 MmdModel 复用现有渲染管线
 pub fn load_vrm<P: AsRef<Path>>(path: P) -> Result<MmdModel> {
     load_vrm_with_extensions(path).map(|loaded| loaded.model)
@@ -207,25 +225,41 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
     let (document, buffers, images) =
         gltf::import(path).map_err(|e| MmdError::VrmParse(format!("glTF 加载失败: {}", e)))?;
 
-    let vrm_ext = vrm_extensions::parse_vrm_extensions(&document)?;
+    // A plain glTF/GLB (no VRM extension) is loaded through the same path with empty VRM metadata.
+    let is_generic_gltf = !vrm_extensions::has_vrm_extension(&document);
+    let vrm_ext = if is_generic_gltf {
+        log::info!("glTF 不含 VRM 扩展，按通用 glTF 模型加载: {}", path.display());
+        vrm_extensions::VrmExtensions::generic(document.materials().len())
+    } else {
+        vrm_extensions::parse_vrm_extensions(&document)?
+    };
     let mut mesh = vrm_mesh::merge_meshes(&document, &buffers)?;
+    if mesh.vertices.is_empty() || mesh.indices.is_empty() {
+        return Err(MmdError::VrmParse("glTF 不包含可渲染的网格".into()));
+    }
 
-    // VRM 使用米为单位，PMX 使用 1 单位 ≈ 0.08 米，需要缩放到 PMX 单位空间
-    const VRM_TO_PMX_SCALE: f32 = 12.5;
+    // VRM 使用米为单位，PMX 使用 1 单位 ≈ 0.08 米，需要缩放到 PMX 单位空间。
+    // 通用 glTF 没有约定单位（例如从 PMX 转换并缩放过的模型），按包围盒高度归一化到常见 MMD 身高。
+    let unit_scale = if is_generic_gltf {
+        generic_unit_scale(&mesh.vertices)
+    } else {
+        vrm_skeleton::VRM_TO_PMX_SCALE
+    };
     for v in &mut mesh.vertices {
-        v.position *= VRM_TO_PMX_SCALE;
+        v.position *= unit_scale;
     }
     for target in &mut mesh.morph_targets {
         for offset in &mut target.position_offsets {
-            *offset *= VRM_TO_PMX_SCALE;
+            *offset *= unit_scale;
         }
     }
 
     let skin = document
         .skins()
         .next()
-        .ok_or_else(|| MmdError::VrmParse("VRM 缺少 skin 数据".into()))?;
-    let bone_manager = vrm_skeleton::build_skeleton(&document, &skin, &buffers, &vrm_ext.humanoid)?;
+        .ok_or_else(|| MmdError::VrmParse("glTF/VRM 缺少 skin 数据（仅支持带骨骼蒙皮的模型）".into()))?;
+    let bone_manager =
+        vrm_skeleton::build_skeleton(&document, &skin, &buffers, &vrm_ext.humanoid, unit_scale)?;
     let vrm_ext = remap_extensions_to_runtime_bones(vrm_ext, &skin);
 
     let (materials, _placeholder_paths) = vrm_material::convert_materials(&document, &vrm_ext);

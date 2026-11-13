@@ -1,45 +1,31 @@
 package com.shiroha.mmdskin.texture.runtime;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import com.shiroha.mmdskin.bridge.runtime.NativeTexturePort;
-import org.lwjgl.opengl.GL46C;
+import java.nio.ByteBuffer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.system.MemoryUtil;
 
-import java.nio.ByteBuffer;
-
-/** 文件职责：封装纹理从 native 解码到 GPU 上传的无状态操作。 */
+/**
+ * 文件职责：封装纹理从 native 解码到 GPU 上传的无状态操作。
+ *
+ * <p>Textures are registered with Minecraft's texture manager instead of being created with raw
+ * OpenGL calls, so they can be referenced by render types and work on every graphics backend.
+ */
 final class TextureGpuLoader {
+    /** A texture counts as blended once this share of its pixels is partially transparent. */
+    private static final int TRANSLUCENT_PIXEL_DIVISOR = 1000;
+    private static final int ALPHA_SEMI_MIN = 8;
+    private static final int ALPHA_SEMI_MAX = 247;
 
     private TextureGpuLoader() {
     }
 
     static TextureRepository.Texture loadToGpu(String filename, NativeTexturePort port) {
-        long handle = port.loadTexture(filename);
-        if (handle == 0) return null;
-
-        int width = port.textureWidth(handle);
-        int height = port.textureHeight(handle);
-        long dataAddr = port.textureData(handle);
-        boolean hasAlpha = port.textureHasAlpha(handle);
-        int size = width * height * (hasAlpha ? 4 : 3);
-
-        ByteBuffer buf = MemoryUtil.memAlloc(size);
-        int texId = GL46C.glGenTextures();
-        try {
-            GL46C.glBindTexture(GL46C.GL_TEXTURE_2D, texId);
-            port.copyTextureData(buf, dataAddr, size);
-            buf.rewind();
-            uploadPixels(width, height, hasAlpha, buf);
-            configureTexture();
-            return buildTexture(texId, width, height, hasAlpha);
-        } catch (RuntimeException | Error e) {
-            deleteGlTexture(texId);
-            throw e;
-        } finally {
-            MemoryUtil.memFree(buf);
-            port.deleteTexture(handle);
-        }
+        TextureRepository.PredecodedTexture decoded = decode(filename, port);
+        return decoded != null ? uploadPredecoded(decoded) : null;
     }
 
     static TextureRepository.PredecodedTexture decode(String filename, NativeTexturePort port) {
@@ -48,6 +34,7 @@ final class TextureGpuLoader {
         try {
             int width = port.textureWidth(handle);
             int height = port.textureHeight(handle);
+            if (width <= 0 || height <= 0) return null;
             long dataAddr = port.textureData(handle);
             boolean hasAlpha = port.textureHasAlpha(handle);
             int size = width * height * (hasAlpha ? 4 : 3);
@@ -61,58 +48,83 @@ final class TextureGpuLoader {
     }
 
     static TextureRepository.Texture uploadPredecoded(TextureRepository.PredecodedTexture pre) {
-        int texId = GL46C.glGenTextures();
         try {
-            GL46C.glBindTexture(GL46C.GL_TEXTURE_2D, texId);
-            uploadPixels(pre.width, pre.height, pre.hasAlpha, pre.pixelData());
-            configureTexture();
-            return buildTexture(texId, pre.width, pre.height, pre.hasAlpha);
-        } catch (RuntimeException | Error e) {
-            deleteGlTexture(texId);
-            throw e;
+            int width = pre.width;
+            int height = pre.height;
+            ByteBuffer source = pre.pixelData();
+            int pixels = width * height;
+            int channels = pre.hasAlpha ? 4 : 3;
+            if (source == null || pixels <= 0 || source.capacity() < (long) pixels * channels) {
+                return null;
+            }
+
+            NativeImage image = new NativeImage(NativeImage.Format.RGBA, width, height, false);
+            Identifier location;
+            boolean translucent;
+            try {
+                translucent = copyPixels(source, pixels, pre.hasAlpha, image.getPointer());
+                // The image is owned by the registered texture from here on.
+                location = RuntimeTextures.register(image);
+            } catch (RuntimeException | Error e) {
+                image.close();
+                throw e;
+            }
+
+            TextureRepository.Texture texture = new TextureRepository.Texture();
+            texture.location = location;
+            texture.hasAlpha = pre.hasAlpha;
+            texture.translucent = translucent;
+            texture.vramSize = (long) pixels * 4;
+            return texture;
         } finally {
             pre.release();
         }
     }
 
+    /**
+     * Copies tightly packed RGB/RGBA bytes into an RGBA {@link NativeImage} buffer.
+     *
+     * @return whether a meaningful share of the pixels is partially transparent
+     */
+    private static boolean copyPixels(ByteBuffer source, int pixels, boolean hasAlpha, long target) {
+        long sourceAddress = MemoryUtil.memAddress(source, 0);
+        if (!hasAlpha) {
+            for (int i = 0; i < pixels; i++) {
+                long src = sourceAddress + (long) i * 3;
+                long dst = target + (long) i * 4;
+                MemoryUtil.memPutByte(dst, MemoryUtil.memGetByte(src));
+                MemoryUtil.memPutByte(dst + 1, MemoryUtil.memGetByte(src + 1));
+                MemoryUtil.memPutByte(dst + 2, MemoryUtil.memGetByte(src + 2));
+                MemoryUtil.memPutByte(dst + 3, (byte) 0xFF);
+            }
+            return false;
+        }
+
+        MemoryUtil.memCopy(sourceAddress, target, (long) pixels * 4);
+        int semiTransparent = 0;
+        for (int i = 0; i < pixels; i++) {
+            int alpha = MemoryUtil.memGetByte(sourceAddress + (long) i * 4 + 3) & 0xFF;
+            if (alpha >= ALPHA_SEMI_MIN && alpha <= ALPHA_SEMI_MAX) {
+                semiTransparent++;
+            }
+        }
+        return semiTransparent > pixels / TRANSLUCENT_PIXEL_DIVISOR;
+    }
+
     static void deleteGlTexture(TextureRepository.Texture tex) {
-        if (tex != null) {
-            deleteGlTexture(tex.tex);
-            tex.tex = 0;
+        if (tex == null) {
+            return;
         }
-    }
-
-    static void deleteGlTexture(int texId) {
-        if (texId <= 0) return;
+        Identifier location = tex.location;
+        tex.location = null;
+        tex.tex = 0;
+        if (location == null) {
+            return;
+        }
         if (RenderSystem.isOnRenderThread()) {
-            GL46C.glDeleteTextures(texId);
+            RuntimeTextures.release(location);
         } else {
-            Minecraft.getInstance().execute(() -> GL46C.glDeleteTextures(texId));
+            Minecraft.getInstance().execute(() -> RuntimeTextures.release(location));
         }
-    }
-
-    private static void uploadPixels(int w, int h, boolean hasAlpha, ByteBuffer buf) {
-        if (hasAlpha) {
-            GL46C.glPixelStorei(GL46C.GL_UNPACK_ALIGNMENT, 4);
-            GL46C.glTexImage2D(GL46C.GL_TEXTURE_2D, 0, GL46C.GL_RGBA, w, h, 0, GL46C.GL_RGBA, GL46C.GL_UNSIGNED_BYTE, buf);
-        } else {
-            GL46C.glPixelStorei(GL46C.GL_UNPACK_ALIGNMENT, 1);
-            GL46C.glTexImage2D(GL46C.GL_TEXTURE_2D, 0, GL46C.GL_RGB, w, h, 0, GL46C.GL_RGB, GL46C.GL_UNSIGNED_BYTE, buf);
-        }
-    }
-
-    private static void configureTexture() {
-        GL46C.glTexParameteri(GL46C.GL_TEXTURE_2D, GL46C.GL_TEXTURE_MAX_LEVEL, 0);
-        GL46C.glTexParameteri(GL46C.GL_TEXTURE_2D, GL46C.GL_TEXTURE_MIN_FILTER, GL46C.GL_LINEAR);
-        GL46C.glTexParameteri(GL46C.GL_TEXTURE_2D, GL46C.GL_TEXTURE_MAG_FILTER, GL46C.GL_LINEAR);
-        GL46C.glBindTexture(GL46C.GL_TEXTURE_2D, 0);
-    }
-
-    private static TextureRepository.Texture buildTexture(int texId, int w, int h, boolean hasAlpha) {
-        TextureRepository.Texture t = new TextureRepository.Texture();
-        t.tex = texId;
-        t.hasAlpha = hasAlpha;
-        t.vramSize = (long) w * h * (hasAlpha ? 4 : 3);
-        return t;
     }
 }
