@@ -2,17 +2,21 @@
 	"schemaVersion": 1,
 	"id": "mmdskin",
 	"version": "${version}",
-	"name": "MMD Skin",
-	"description": "A mod that replaces Minecraft entity rendering with MMD models",
+	"name": "3D Model Renderer",
+	"description": "Renders MMD (PMX/PMD), VRM and glTF/GLB models in place of players and mobs, with VMD animation and physics. Fork of MMD Skin (MC-MMD-rust) by shiroha233, ported to Minecraft 26.3 Fabric.",
 	"authors": [
-		"shiroha233",
-		"kjkjkAIStudio(原作者)",
+		"intorbmn"
+	],
+	"contributors": [
+		"shiroha233 (MMD Skin / MC-MMD-rust, upstream)",
+		"kjkjkAIStudio (KAIMyEntity, original author)",
 		"asuka-mio",
-		"Gengorou-C"
+		"Gengorou-C (KAIMyEntity-C)"
 	],
 	"contact": {
-		"homepage": "https://github.com/shiroha233/3d-skin-layers",
-		"sources": "https://github.com/shiroha233/3d-skin-layers"
+		"homepage": "https://github.com/intorbmn/3d-model-renderer",
+		"sources": "https://github.com/intorbmn/3d-model-renderer",
+		"issues": "https://github.com/intorbmn/3d-model-renderer/issues"
 	},
 	"license": "MIT",
 	"icon": "icon.png",

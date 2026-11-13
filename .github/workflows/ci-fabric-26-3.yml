@@ -3,9 +3,11 @@ name: MPR Fabric 26.3 Java compile check
 on:
   push:
     branches:
+      - main
       - 'port/**'
   pull_request:
     branches:
+      - main
       - 'port/**'
   workflow_dispatch:
 
@@ -238,7 +240,7 @@ jobs:
       - name: Upload test jar
         uses: actions/upload-artifact@v4
         with:
-          name: mmdskin-fabric-26.3-${{ matrix.label }}
+          name: 3d-model-renderer-fabric-26.3-${{ matrix.label }}
           path: |
             fabric/build/libs/*.jar
             !fabric/build/libs/*-sources.jar

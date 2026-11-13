@@ -43,7 +43,7 @@ subprojects {
     apply plugin: "net.fabricmc.fabric-loom"
 
     base {
-        archivesName = "mmdskin-${project.name}"
+        archivesName = "3d-model-renderer-${project.name}"
     }
 
     dependencies {

@@ -1,7 +1,7 @@
 package com.shiroha.mmdskin;
 
 /**
- * MMD Skin 模组主类
+ * 3D Model Renderer 模组主类（fork 自 MMD Skin）
  */
 
 public class MmdSkin {

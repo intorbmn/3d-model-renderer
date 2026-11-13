@@ -3,6 +3,7 @@ name: MPR Rust JNI smoke test
 on:
   push:
     branches:
+      - main
       - 'port/**'
   workflow_dispatch:
 

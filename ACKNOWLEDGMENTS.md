@@ -1,4 +1,13 @@
-# 致谢
+# 致谢 / Acknowledgments
+
+## Upstream
+
+3D Model Renderer is a fork of **MMD Skin (MC-MMD-rust)** by shiroha:
+https://github.com/shiroha-233/MC-MMD-rust (MIT). Almost all of the engine and mod code comes from it.
+
+本项目 fork 自 shiroha 的 MMD Skin (MC-MMD-rust)，绝大部分引擎与模组代码来自该项目。
+
+---
 
 本项目的实现离不开以下开源项目及其贡献者的工作。
 

@@ -339,9 +339,9 @@ jobs:
       - name: Upload Fabric Mod
         uses: actions/upload-artifact@v4
         with:
-          name: mmdskin-fabric-${{ steps.version.outputs.mod_version }}
+          name: 3d-model-renderer-fabric-${{ steps.version.outputs.mod_version }}
           path: |
-            fabric/build/libs/mmdskin-fabric-*.jar
+            fabric/build/libs/3d-model-renderer-fabric-*.jar
             !fabric/build/libs/*-dev*.jar
             !fabric/build/libs/*-sources*.jar
           if-no-files-found: error
@@ -419,7 +419,7 @@ jobs:
       - name: Rename JARs to universal
         run: |
           cd fabric/build/libs
-          for f in mmdskin-fabric-*.jar; do
+          for f in 3d-model-renderer-fabric-*.jar; do
             case "$f" in *-dev*|*-sources*) continue;; esac
             mv "$f" "${f%.jar}-universal.jar"
           done
@@ -427,7 +427,7 @@ jobs:
       - name: Upload Universal Fabric Mod
         uses: actions/upload-artifact@v4
         with:
-          name: mmdskin-fabric-${{ steps.version.outputs.mod_version }}-universal
+          name: 3d-model-renderer-fabric-${{ steps.version.outputs.mod_version }}-universal
           path: |
             fabric/build/libs/*-universal.jar
           if-no-files-found: error
@@ -462,7 +462,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/mmdskin-fabric-*/*.jar
+            artifacts/3d-model-renderer-fabric-*/*.jar
             artifacts/native-windows-x64/*.dll
             artifacts/native-windows-arm64/*.dll
             artifacts/native-linux-x64/*.so

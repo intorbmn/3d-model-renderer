@@ -6,6 +6,6 @@ pluginManagement {
     }
 }
 
-rootProject.name = "mmdskin"
+rootProject.name = "3d-model-renderer"
 include("common")
 include("fabric")

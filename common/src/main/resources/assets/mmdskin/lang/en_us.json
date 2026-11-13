@@ -1,5 +1,5 @@
 {
-  "key.categories.mmdskin": "MMD Skin",
+  "key.categories.mmdskin": "3D Model Renderer",
   "key.mmdskin.config_wheel": "Config Wheel",
   "key.mmdskin.maid_config_wheel": "Maid Config Wheel",
   "gui.mmdskin.config_wheel": "Config Wheel",
@@ -15,7 +15,7 @@
   "gui.mmdskin.maid.action_select": "Action Select",
   "gui.mmdskin.maid.material_control": "Material Control",
   "gui.mmdskin.maid_action_wheel": "Maid Action Wheel",
-  "gui.mmdskin.mod_settings.title": "MMD Skin - Settings",
+  "gui.mmdskin.mod_settings.title": "3D Model Renderer - Settings",
   "gui.mmdskin.mod_settings.category.render": "Render Settings",
   "gui.mmdskin.mod_settings.category.performance": "Performance Settings",
   "gui.mmdskin.mod_settings.category.mob_replacement": "Mob Replacement",

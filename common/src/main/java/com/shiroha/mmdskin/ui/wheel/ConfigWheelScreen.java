@@ -74,7 +74,7 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         renderWheelBase(guiGraphics, mouseX, mouseY, partialTick, buildEntries());
 
-        String centerText = selectedSlot >= 0 ? configSlots.get(selectedSlot).name : "MMD Skin";
+        String centerText = selectedSlot >= 0 ? configSlots.get(selectedSlot).name : "3D Model Renderer";
         renderCenterBubble(guiGraphics, centerText, style.lineColor());
 
         super.extractRenderState(guiGraphics, mouseX, mouseY, partialTick);
