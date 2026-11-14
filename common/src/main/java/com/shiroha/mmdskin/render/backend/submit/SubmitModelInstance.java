@@ -72,14 +72,18 @@ public final class SubmitModelInstance extends BaseModelInstance {
     private ByteBuffer subMeshData;
     private boolean hasUvMorph;
 
-    private ByteBuffer positionBytes;
-    private ByteBuffer normalBytes;
     private ByteBuffer uvBytes;
     private float[] positions;
     private float[] normals;
     private float[] uvs;
     private long copiedRevision = Long.MIN_VALUE;
     private boolean uvsCopied;
+
+    // Vertices of the materials drawn last frame, as [start, end) pairs: only these are copied from the
+    // native side and transformed. Hidden outfits often hold a large share of a model's vertices.
+    private boolean[] drawnSubMeshes;
+    private int[] vertexRanges = new int[0];
+    private int vertexRangeCount;
 
     // Geometry transformed into the pose of the most recent submit. Every material node of one submit
     // shares the pose, so the transform is done once and reused by the remaining nodes.
@@ -123,8 +127,6 @@ public final class SubmitModelInstance extends BaseModelInstance {
 
         indices = readIndices(port, modelHandle, indexCount);
 
-        positionBytes = allocate(vertexCount * 12);
-        normalBytes = allocate(vertexCount * 12);
         uvBytes = allocate(vertexCount * 8);
         positions = new float[vertexCount * 3];
         normals = new float[vertexCount * 3];
@@ -261,11 +263,11 @@ public final class SubmitModelInstance extends BaseModelInstance {
         }
 
         NativeRenderBackendPort port = backendPort();
-        copyGeometryFromNative(port);
-
         fetchMaterialMorphResults();
         subMeshData.clear();
         port.batchGetSubMeshData(model, subMeshData);
+        refreshVertexRanges();
+        copyGeometryFromNative(port);
 
         // The model transform is deliberately left on the pose stack, as the original renderer did:
         // callers draw held items right after this with that transform in place, and every caller
@@ -344,17 +346,96 @@ public final class SubmitModelInstance extends BaseModelInstance {
         return a << 24 | r << 16 | g << 8 | b;
     }
 
+    /** Rebuilds {@link #vertexRanges} when the set of drawn sub-meshes changed. */
+    private void refreshVertexRanges() {
+        if (drawnSubMeshes == null || drawnSubMeshes.length != subMeshCount) {
+            drawnSubMeshes = new boolean[subMeshCount];
+            vertexRanges = null;
+        }
+        boolean changed = vertexRanges == null;
+        for (int i = 0; i < subMeshCount; i++) {
+            int base = i * SUB_MESH_STRIDE;
+            int materialId = subMeshData.getInt(base);
+            int beginIndex = subMeshData.getInt(base + 4);
+            int indexCount = subMeshData.getInt(base + 8);
+            boolean drawn = subMeshData.get(base + 16) != 0
+                    && materialId >= 0 && materialId < materials.length
+                    && beginIndex >= 0 && indexCount >= 3 && beginIndex <= indices.length - indexCount;
+            if (drawn != drawnSubMeshes[i]) {
+                drawnSubMeshes[i] = drawn;
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return;
+        }
+
+        boolean[] used = new boolean[vertexCount];
+        for (int i = 0; i < subMeshCount; i++) {
+            if (!drawnSubMeshes[i]) {
+                continue;
+            }
+            int base = i * SUB_MESH_STRIDE;
+            int begin = subMeshData.getInt(base + 4);
+            int end = begin + subMeshData.getInt(base + 8);
+            for (int k = begin; k < end; k++) {
+                used[indices[k]] = true;
+            }
+        }
+        // Runs of used vertices; short gaps are bridged so the copies stay few and large.
+        int[] ranges = new int[16];
+        int count = 0;
+        int v = 0;
+        while (v < vertexCount) {
+            while (v < vertexCount && !used[v]) {
+                v++;
+            }
+            if (v == vertexCount) {
+                break;
+            }
+            int start = v;
+            int end = v;
+            while (v < vertexCount) {
+                if (used[v]) {
+                    end = ++v;
+                } else if (v - end < RANGE_GAP) {
+                    v++;
+                } else {
+                    break;
+                }
+            }
+            if (count * 2 + 2 > ranges.length) {
+                ranges = java.util.Arrays.copyOf(ranges, ranges.length * 2);
+            }
+            ranges[count * 2] = start;
+            ranges[count * 2 + 1] = end;
+            count++;
+        }
+        vertexRanges = ranges;
+        vertexRangeCount = count;
+        // Vertices that were hidden until now have never been copied or transformed.
+        copiedRevision = Long.MIN_VALUE;
+        transformedValid = false;
+    }
+
+    /** Vertex gaps shorter than this are copied along rather than splitting a range. */
+    private static final int RANGE_GAP = 64;
+
     private void copyGeometryFromNative(NativeRenderBackendPort port) {
         long revision = getNativeUpdateRevision();
         if (revision != copiedRevision) {
             copiedRevision = revision;
-            int size = vertexCount * 12;
-            positionBytes.clear();
-            port.copyNativeDataToBuffer(positionBytes, port.getPositionDataAddress(model), size);
-            positionBytes.asFloatBuffer().get(positions, 0, vertexCount * 3);
-            normalBytes.clear();
-            port.copyNativeDataToBuffer(normalBytes, port.getNormalDataAddress(model), size);
-            normalBytes.asFloatBuffer().get(normals, 0, vertexCount * 3);
+            long positionAddress = port.getPositionDataAddress(model);
+            long normalAddress = port.getNormalDataAddress(model);
+            if (positionAddress != 0L && normalAddress != 0L) {
+                for (int r = 0; r < vertexRangeCount; r++) {
+                    int start = vertexRanges[r * 2];
+                    int floats = (vertexRanges[r * 2 + 1] - start) * 3;
+                    long offset = (long) start * 12L;
+                    MemoryUtil.memFloatBuffer(positionAddress + offset, floats).get(positions, start * 3, floats);
+                    MemoryUtil.memFloatBuffer(normalAddress + offset, floats).get(normals, start * 3, floats);
+                }
+            }
             if (hasUvMorph) {
                 uvsCopied = false;
             }
@@ -466,27 +547,29 @@ public final class SubmitModelInstance extends BaseModelInstance {
         float[] srcN = normals;
         float[] dst = transformedPositions;
         float[] dstN = transformedNormals;
-        int length = vertexCount * 3;
-        for (int i = 0; i < length; i += 3) {
-            float x = src[i], y = src[i + 1], z = src[i + 2];
-            dst[i] = m00 * x + m10 * y + m20 * z + m30;
-            dst[i + 1] = m01 * x + m11 * y + m21 * z + m31;
-            dst[i + 2] = m02 * x + m12 * y + m22 * z + m32;
+        for (int r = 0; r < vertexRangeCount; r++) {
+            int length = vertexRanges[r * 2 + 1] * 3;
+            for (int i = vertexRanges[r * 2] * 3; i < length; i += 3) {
+                float x = src[i], y = src[i + 1], z = src[i + 2];
+                dst[i] = m00 * x + m10 * y + m20 * z + m30;
+                dst[i + 1] = m01 * x + m11 * y + m21 * z + m31;
+                dst[i + 2] = m02 * x + m12 * y + m22 * z + m32;
 
-            float nx = srcN[i], ny = srcN[i + 1], nz = srcN[i + 2];
-            float tx = n00 * nx + n10 * ny + n20 * nz;
-            float ty = n01 * nx + n11 * ny + n21 * nz;
-            float tz = n02 * nx + n12 * ny + n22 * nz;
-            float lengthSq = tx * tx + ty * ty + tz * tz;
-            if (lengthSq > 1.0e-12f) {
-                float inv = (float) (1.0 / Math.sqrt(lengthSq));
-                dstN[i] = tx * inv;
-                dstN[i + 1] = ty * inv;
-                dstN[i + 2] = tz * inv;
-            } else {
-                dstN[i] = 0.0f;
-                dstN[i + 1] = 1.0f;
-                dstN[i + 2] = 0.0f;
+                float nx = srcN[i], ny = srcN[i + 1], nz = srcN[i + 2];
+                float tx = n00 * nx + n10 * ny + n20 * nz;
+                float ty = n01 * nx + n11 * ny + n21 * nz;
+                float tz = n02 * nx + n12 * ny + n22 * nz;
+                float lengthSq = tx * tx + ty * ty + tz * tz;
+                if (lengthSq > 1.0e-12f) {
+                    float inv = (float) (1.0 / Math.sqrt(lengthSq));
+                    dstN[i] = tx * inv;
+                    dstN[i + 1] = ty * inv;
+                    dstN[i + 2] = tz * inv;
+                } else {
+                    dstN[i] = 0.0f;
+                    dstN[i + 1] = 1.0f;
+                    dstN[i + 2] = 0.0f;
+                }
             }
         }
     }
@@ -501,8 +584,6 @@ public final class SubmitModelInstance extends BaseModelInstance {
     }
 
     private void freeBuffers() {
-        positionBytes = free(positionBytes);
-        normalBytes = free(normalBytes);
         uvBytes = free(uvBytes);
         subMeshData = free(subMeshData);
         positions = null;

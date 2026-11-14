@@ -77,6 +77,10 @@ impl VrmModelRuntimeState {
         self.constraints.process(&mut model.bone_manager);
         let sample = model.spring_frame_motion.update(model.model_transform(), delta_time);
         let strength = crate::physics::get_config().inertia_strength;
+        model.refresh_skin_mask();
+        if std::mem::take(&mut model.skin_bones_changed) {
+            self.spring_bone.set_used_bones(&model.skin_bones);
+        }
         self.spring_bone.process_with_motion(&mut model.bone_manager, delta_time, |point| {
             sample.point_accel(point, strength)
         });

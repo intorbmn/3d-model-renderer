@@ -111,6 +111,10 @@ struct SpringChainRuntime {
     collider_indices: Vec<usize>,
     mode: SpringMode,
     max_angle: Option<f32>,
+    /// False while no shown vertex hangs on the chain (a hidden outfit): it is not simulated.
+    active: bool,
+    /// Start again from the rest pose on the next step (the chain was just shown again).
+    restart: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -186,8 +190,24 @@ impl SpringBoneRuntime {
         }
     }
 
+    /// Simulates only the chains with a bone in `used` (by bone index; empty = all of them).
+    pub fn set_used_bones(&mut self, used: &[bool]) {
+        for chain in &mut self.chains {
+            let active = used.is_empty()
+                || chain.joints.iter().any(|joint| used.get(joint.bone_index).copied().unwrap_or(true));
+            if active && !chain.active {
+                chain.restart = true;
+            }
+            chain.active = active;
+        }
+    }
+
     fn step(&mut self, bones: &mut BoneManager, h: f32, external: &impl Fn(Vec3) -> Vec3) {
         for chain in &mut self.chains {
+            if !chain.active {
+                continue;
+            }
+            let restart = std::mem::take(&mut chain.restart);
             for joint in &mut chain.joints {
                 let Some(transform) = bones.get_bone(joint.bone_index) else {
                     continue;
@@ -198,7 +218,7 @@ impl SpringBoneRuntime {
                     let rest = parent.transform_point3(bounce.rest_local);
                     let (omega, zeta) = jiggle_constants(joint.stiffness, joint.drag_force);
                     let target = rest + joint.gravity_dir * (joint.gravity_power * joint.rest_length * 0.5);
-                    if !bounce.position.is_finite() || (bounce.position - rest).length() > bounce.max_offset * 4.0 + 1e-3 {
+                    if restart || !bounce.position.is_finite() || (bounce.position - rest).length() > bounce.max_offset * 4.0 + 1e-3 {
                         bounce.position = rest;
                         bounce.velocity = Vec3::ZERO;
                     }
@@ -220,7 +240,8 @@ impl SpringBoneRuntime {
                 let rest_tail = bone_position + rest_dir * joint.rest_length;
                 let mut current_tail = joint.state.current_world(bones);
                 let mut prev_tail = joint.state.prev_world(bones);
-                if !current_tail.is_finite()
+                if restart
+                    || !current_tail.is_finite()
                     || !prev_tail.is_finite()
                     || (current_tail - bone_position).length() > joint.rest_length * RESET_DISTANCE
                 {
@@ -300,7 +321,7 @@ impl SpringBoneRuntime {
     }
 
     fn pose(&mut self, bones: &mut BoneManager) {
-        for chain in &self.chains {
+        for chain in self.chains.iter().filter(|chain| chain.active && !chain.restart) {
             for joint in &chain.joints {
                 let Some(transform) = bones.get_bone(joint.bone_index) else {
                     continue;
@@ -448,6 +469,8 @@ fn resolve_chain(
             collider_indices,
             mode: spring.settings.mode,
             max_angle: spring.settings.max_angle,
+            active: true,
+            restart: false,
         })
     }
 }
@@ -757,6 +780,42 @@ mod tests {
 
     fn tip(bones: &BoneManager) -> Vec3 {
         bones.get_bone(2).unwrap().position()
+    }
+
+    #[test]
+    fn chain_of_a_hidden_outfit_is_not_simulated() {
+        let mut bones = build_chain_bones();
+        let sideways = SpringBoneJoint { gravity_dir: [1.0, 0.0, 0.0], ..joint(1, 0.5, 1.0, 0.4) };
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![sideways, joint(2, 1.0, 0.0, 0.4)],
+                collider_groups: vec![],
+                center: None,
+                settings: SpringSettings { last_is_tail: true, ..SpringSettings::default() },
+            }],
+            colliders: vec![],
+            collider_groups: vec![],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+
+        // Only the root carries shown vertices: the chain sleeps and stays in its pose.
+        runtime.set_used_bones(&[true, false, false]);
+        for _ in 0..30 {
+            runtime.process(&mut bones, 1.0 / 60.0);
+        }
+        assert!((tip(&bones) - Vec3::new(0.0, 2.0, 0.0)).length() < 1e-4, "inactive chain moved");
+
+        // Shown again: it simulates, starting from rest.
+        runtime.set_used_bones(&[true, true, false]);
+        assert!(runtime.chains[0].restart);
+        for _ in 0..30 {
+            runtime.process(&mut bones, 1.0 / 60.0);
+        }
+        assert!(tip(&bones).x > 0.05, "active chain should sag sideways, tip at {:?}", tip(&bones));
+
+        // An empty list means every material is shown.
+        runtime.set_used_bones(&[]);
+        assert!(runtime.chains[0].active);
     }
 
     #[test]

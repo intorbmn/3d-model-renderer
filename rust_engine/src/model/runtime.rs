@@ -134,6 +134,16 @@ pub struct MmdModel {
     // 材质可见性控制（用于脱外套等功能）
     material_visible: Vec<bool>,
     user_material_visible: Vec<bool>,
+    /// Per vertex: used by a material the user shows. Hidden outfits are not skinned on the CPU.
+    /// Empty while every material is shown.
+    skin_mask: Vec<bool>,
+    /// The user visibility `skin_mask` was built for.
+    skin_mask_for: Vec<bool>,
+    /// Per bone: weighted by a shown vertex (empty while every material is shown). Springs of
+    /// hidden outfits are not simulated.
+    pub(crate) skin_bones: Vec<bool>,
+    /// Set when `skin_bones` changed, cleared by the spring runtime.
+    pub(crate) skin_bones_changed: bool,
 
     // GPU 蒙皮数据缓冲区
     /// 骨骼索引（ivec4 格式，每顶点 4 个索引）
@@ -281,6 +291,10 @@ impl MmdModel {
             physics_bone_transforms_buf: Vec::new(),
             material_visible: Vec::new(),
             user_material_visible: Vec::new(),
+            skin_mask: Vec::new(),
+            skin_mask_for: Vec::new(),
+            skin_bones: Vec::new(),
+            skin_bones_changed: false,
             bone_indices: Vec::new(),
             bone_weights: Vec::new(),
             original_positions: Vec::new(),
@@ -967,7 +981,55 @@ impl MmdModel {
     }
 
     /// 更新顶点（蒙皮计算）- 使用 rayon 并行加速
+    /// Rebuilds `skin_mask` when the user's material visibility changed.
+    pub(crate) fn refresh_skin_mask(&mut self) {
+        let user_visible = self.user_material_visibility_snapshot();
+        if user_visible == self.skin_mask_for {
+            return;
+        }
+        self.skin_mask.clear();
+        if user_visible.iter().any(|&v| !v) {
+            self.skin_mask.resize(self.vertices.len(), false);
+            for submesh in &self.submeshes {
+                if !user_visible.get(submesh.material_id as usize).copied().unwrap_or(true) {
+                    continue;
+                }
+                let begin = submesh.begin_index as usize;
+                let end = (begin + submesh.index_count as usize).min(self.indices.len());
+                for &index in &self.indices[begin..end] {
+                    if let Some(used) = self.skin_mask.get_mut(index as usize) {
+                        *used = true;
+                    }
+                }
+            }
+        }
+        self.skin_mask_for = user_visible;
+
+        self.skin_bones.clear();
+        if !self.skin_mask.is_empty() {
+            self.skin_bones.resize(self.bone_manager.bone_count(), false);
+            let mut mark = |bone: i32| {
+                if let Some(used) = usize::try_from(bone).ok().and_then(|b| self.skin_bones.get_mut(b)) {
+                    *used = true;
+                }
+            };
+            for (weight, _) in self.weights.iter().zip(&self.skin_mask).filter(|(_, &used)| used) {
+                match weight {
+                    VertexWeight::Bdef1 { bone } => mark(*bone),
+                    VertexWeight::Bdef2 { bones, .. } | VertexWeight::Sdef { bones, .. } => bones.iter().for_each(|&b| mark(b)),
+                    VertexWeight::Bdef4 { bones, weights } | VertexWeight::Qdef { bones, weights } => bones
+                        .iter()
+                        .zip(weights)
+                        .filter(|(_, &w)| w > 0.0)
+                        .for_each(|(&b, _)| mark(b)),
+                }
+            }
+        }
+        self.skin_bones_changed = true;
+    }
+
     pub fn update(&mut self) {
+        self.refresh_skin_mask();
         let bone_matrices = self.bone_manager.get_skinning_matrices();
         let vertex_count = self.vertices.len();
         let raw_len = vertex_count * 3;
@@ -996,6 +1058,7 @@ impl MmdModel {
         let weights = &self.weights;
 
         // 将输出切片分块，每个顶点对应 3 个 f32
+        let skin_mask = &self.skin_mask;
         let pos_raw = &mut self.update_positions_raw;
         let norm_raw = &mut self.update_normals_raw;
         let positions = &mut self.update_positions;
@@ -1009,8 +1072,13 @@ impl MmdModel {
             .zip(norm_raw.par_chunks_mut(3))
             .zip(vertices.par_iter())
             .zip(weights.par_iter())
+            .enumerate()
             .for_each(
-                |(((((pos_out, norm_out), pos_chunk), norm_chunk), vertex), weight)| {
+                |(index, (((((pos_out, norm_out), pos_chunk), norm_chunk), vertex), weight))| {
+                    // Only hidden materials use this vertex: it is not drawn, skip it.
+                    if !skin_mask.is_empty() && !skin_mask[index] {
+                        return;
+                    }
                     // 使用 pos_out（即 update_positions，已应用 Morph）作为蒙皮输入
                     let morph_position = *pos_out;
                     let (pos, norm) = compute_vertex_skinning(
