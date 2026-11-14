@@ -68,6 +68,7 @@ pub(crate) fn build_skeleton(
     humanoid_mapping: &HumanoidMapping,
     unit_scale: f32,
     xz_sign: f32,
+    lift: f32,
 ) -> crate::Result<BoneSet> {
     let parent_map = build_parent_map(document);
 
@@ -93,7 +94,7 @@ pub(crate) fn build_skeleton(
         &node_world_transforms,
         unit_scale,
         xz_sign,
-    );
+    ) + Vec3::Y * lift;
 
     let mut bone_set = BoneSet::new();
     bone_set.set_vrm(true);
@@ -128,7 +129,7 @@ pub(crate) fn build_skeleton(
             Vec3::new(xz_sign * wt.col(3).x, wt.col(3).y, xz_sign * wt.col(3).z)
         };
 
-        bone.initial_position = world_pos * unit_scale;
+        bone.initial_position = world_pos * unit_scale + Vec3::Y * lift;
 
         if Some(joint_idx) == hips_joint_idx {
             bone.parent_index = 2; // グルーブ

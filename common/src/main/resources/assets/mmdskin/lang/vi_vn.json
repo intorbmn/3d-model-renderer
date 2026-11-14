@@ -2,5 +2,16 @@
   "gui.mmdskin.config.outfit": "Trang phục",
   "gui.mmdskin.outfit.title": "Trang phục",
   "gui.mmdskin.outfit.close": "Đóng",
-  "message.mmdskin.outfit.none": "Model này chưa có bộ trang phục. Hãy tạo preset outfit cho card nhân vật trong 3D Model Renderer Studio."
+  "message.mmdskin.outfit.none": "Model này chưa có bộ trang phục. Hãy tạo preset outfit cho card nhân vật trong 3D Model Renderer Studio.",
+  "item.mmdskin.model_tag": "Thẻ model",
+  "gui.mmdskin.companion.setup": "Thẻ model",
+  "gui.mmdskin.companion.interact": "Tương tác",
+  "gui.mmdskin.companion.model": "Model",
+  "gui.mmdskin.companion.lines": "Câu thoại",
+  "gui.mmdskin.companion.talk": "Nói chuyện",
+  "gui.mmdskin.companion.animations": "Động tác",
+  "gui.mmdskin.companion.model_title": "Model cho %s",
+  "gui.mmdskin.companion.lines_title": "%s sẽ nói",
+  "gui.mmdskin.companion.line": "Câu %s",
+  "message.mmdskin.companion.default_line": "Xin chào!"
 }

@@ -38,6 +38,8 @@ Những thay đổi từ bản test trước, cần kiểm tra trong game:
 - **Model có spring bone (VRM, card GLB/glTF)**: vùng va chạm đã đúng kích thước, tóc không còn xuyên vào đầu và người.
 - **Card**: bỏ card tạo từ studio vào `3d-skin/Cards/`, mở danh sách chọn model (card nằm đầu, có nhãn **CARD** màu hồng), chọn card và xem kích thước, màu, nhóm vật lý. Mở vòng cấu hình → **Trang phục** trên card có preset để đổi trang phục; di chuyển để kiểm tra vật lý tóc và ngực.
 - **Cầm vật phẩm** với model GLB/glTF: kiếm phải cầm lưỡi hướng ra trước, không bị ngửa nằm ngang.
+- **Chân chạm đất**: model GLB/glTF có chân nằm dưới gốc toạ độ (nhân vật ILLGAMES) được nâng lên để đế chân chạm đất.
+- **Thẻ model**: chế một cái (name tag + mảnh thạch anh tím, hoặc lấy trong tab Công cụ), cầm thẻ nhấp phải vào một con mob, chọn model và viết câu thoại; sau đó tay không nhấp phải để nói chuyện hoặc cho nó diễn động tác. Các mob cùng loài khác vẫn giữ nguyên.
 
 ## Cài đặt
 
@@ -100,6 +102,15 @@ blender --background model.blend --python tools/blender/export_glb.py -- output.
 ```
 
 Script xuất armature cùng các lưới ra GLB và dựng lại material về dạng Principled BSDF, vì trình xuất glTF của Blender bỏ mất texture của material kiểu VRM/MToon.
+
+## Gán model riêng cho từng con mob (Thẻ model)
+
+Vật phẩm **Thẻ model** (chế từ name tag và mảnh thạch anh tím, hoặc lấy trong tab sáng tạo Công cụ & Tiện ích) gán model cho riêng một con mob, thay vì cho cả loài (tính năng thay model mob trong cài đặt):
+
+- **Cầm thẻ, nhấp phải vào mob** để mở vòng: **Model** chọn model (mục mặc định là bỏ model), **Câu thoại** đặt tối đa tám câu mob sẽ nói lần lượt.
+- **Tay không, nhấp phải vào mob đó** để tương tác: **Nói chuyện** (mob dừng lại, nhìn bạn, nói câu tiếp theo trong khung chat cho người chơi ở gần và diễn `talk.vmd`) hoặc **Động tác** (một động tác trong vòng động tác của bạn, diễn khoảng sáu giây hoặc đến khi mob đi chỗ khác). Ngồi (sneak) khi nhấp để dùng mob như bình thường (ví dụ giao dịch với dân làng).
+
+Server lưu model và câu thoại của từng con mob cùng thế giới (`data/mmdskin_companions.json`) và gửi cho mọi người chơi, nên ai cũng thấy giống nhau; riêng file model phải có sẵn trong game của mỗi người. Mob chết thì mục của nó bị xoá.
 
 ## Phím tắt
 

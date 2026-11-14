@@ -333,5 +333,16 @@
   "gui.mmdskin.config.outfit": "Outfit",
   "gui.mmdskin.outfit.title": "Outfit",
   "gui.mmdskin.outfit.close": "Close",
-  "message.mmdskin.outfit.none": "This model has no outfits. Make outfit presets for a character card in 3D Model Renderer Studio."
+  "message.mmdskin.outfit.none": "This model has no outfits. Make outfit presets for a character card in 3D Model Renderer Studio.",
+  "item.mmdskin.model_tag": "Model Tag",
+  "gui.mmdskin.companion.setup": "Model Tag",
+  "gui.mmdskin.companion.interact": "Interact",
+  "gui.mmdskin.companion.model": "Model",
+  "gui.mmdskin.companion.lines": "Lines",
+  "gui.mmdskin.companion.talk": "Talk",
+  "gui.mmdskin.companion.animations": "Animations",
+  "gui.mmdskin.companion.model_title": "Model for %s",
+  "gui.mmdskin.companion.lines_title": "What %s says",
+  "gui.mmdskin.companion.line": "Line %s",
+  "message.mmdskin.companion.default_line": "Hello!"
 }

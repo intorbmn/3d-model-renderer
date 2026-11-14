@@ -17,6 +17,13 @@ public final class MobReplacementService {
     }
 
     public static String getReplacementModelName(LivingEntity entity) {
+        // A mob given its own model with the model tag wears it, whatever its kind is set to.
+        if (entity != null && !isPlayerLike(entity) && !isMaidEntity(entity)) {
+            String own = com.shiroha.mmdskin.companion.CompanionState.model(entity.getUUID());
+            if (own != null && ModelCatalogEntry.findByFolderName(own) != null) {
+                return own;
+            }
+        }
         if (entity == null || !MobReplacementTargets.isSupported(entity.getType()) || isPlayerLike(entity) || isMaidEntity(entity)) {
             return null;
         }

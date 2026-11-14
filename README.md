@@ -37,6 +37,8 @@ Things changed since the last test build, worth checking in game:
 - **Physics follows the player.** Hair, skirts and bust should lag when you start or stop moving, trail back while walking or sprinting, swing out when you turn, and not fly off when you teleport. Strength: *Inertia Strength* in the mod settings (50 = realistic, the default).
 - **Spring-bone models (VRM, and GLB/glTF cards)**: colliders now have the right size, so hair should stay outside the head and body.
 - **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups. Open the config wheel → **Outfit** on a card with outfit presets and switch outfits; move around to check hair and bust physics.
+- **Feet on the ground**: GLB/glTF models whose feet sit below their origin (ILLGAMES characters) are lifted so the soles rest on the ground.
+- **Model Tag**: craft one (name tag + amethyst shard, or from the Tools tab), right-click a mob with it, pick a model and write its lines; then right-click it with an empty hand to talk to it or make it play an animation. Other mobs of the same kind keep their look.
 - **Held items** on GLB/glTF models: a sword should be held edge-forward, not lying flat.
 
 ## Installation
@@ -100,6 +102,15 @@ blender --background model.blend --python tools/blender/export_glb.py -- output.
 ```
 
 The script exports the armature and its meshes to GLB and rebuilds the materials as Principled BSDF, because Blender's glTF exporter drops the textures of VRM/MToon-style materials.
+
+## Giving one mob its own model (Model Tag)
+
+The **Model Tag** item (crafted from a name tag and an amethyst shard, or found in the Tools & Utilities creative tab) gives a single mob its own model, instead of every mob of its kind (the mod settings' mob replacement):
+
+- **Right-click a mob with the tag** to open its wheel: **Model** picks the model (the default entry removes it), **Lines** sets up to eight lines it says in turn.
+- **Right-click it with an empty hand** to interact: **Talk** (it stops, looks at you, says its next line in chat to players nearby and plays `talk.vmd`) or **Animations** (one of your action wheel's animations, played for about six seconds or until it walks off). Sneak to use the mob as usual (trading with a villager, for example).
+
+The server keeps each mob's model and lines with the world (`data/mmdskin_companions.json`) and sends them to every player, so everyone sees the same; the model itself has to be installed on each player's game. A mob's entry goes when it dies.
 
 ## Key bindings
 

@@ -292,6 +292,56 @@ fn generic_unit_scale(vertices: &[super::RuntimeVertex]) -> f32 {
     }
 }
 
+/// How far to move a model up so its feet rest on the ground (y = 0): the lowest vertex mostly
+/// weighted to a foot or toe bone. 0 when the feet already rest there (within 0.05 units), when no
+/// feet are found, or when the gap is implausible (over 15% of the model's height).
+fn ground_lift(mesh: &vrm_mesh::MergedMesh, skin: &gltf::Skin, humanoid: &vrm_extensions::HumanoidMapping) -> f32 {
+    let foot_bones: Vec<i32> = skin
+        .joints()
+        .enumerate()
+        .filter(|(_, node)| {
+            humanoid.map.get(&node.index()).is_some_and(|name| {
+                matches!(name.as_str(), "leftFoot" | "rightFoot" | "leftToes" | "rightToes")
+            })
+        })
+        .map(|(joint, _)| (joint + vrm_skeleton::VIRTUAL_BONE_COUNT) as i32)
+        .collect();
+    if foot_bones.is_empty() {
+        return 0.0;
+    }
+    let dominant = |weight: &super::VertexWeight| -> i32 {
+        match weight {
+            super::VertexWeight::Bdef1 { bone } => *bone,
+            super::VertexWeight::Bdef2 { bones, weight } | super::VertexWeight::Sdef { bones, weight, .. } => {
+                if *weight >= 0.5 { bones[0] } else { bones[1] }
+            }
+            super::VertexWeight::Bdef4 { bones, weights } | super::VertexWeight::Qdef { bones, weights } => {
+                let mut best = 0;
+                for i in 1..4 {
+                    if weights[i] > weights[best] {
+                        best = i;
+                    }
+                }
+                bones[best]
+            }
+        }
+    };
+    let (mut feet_min, mut min_y, mut max_y) = (f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY);
+    for (vertex, weight) in mesh.vertices.iter().zip(&mesh.weights) {
+        min_y = min_y.min(vertex.position.y);
+        max_y = max_y.max(vertex.position.y);
+        if foot_bones.contains(&dominant(weight)) {
+            feet_min = feet_min.min(vertex.position.y);
+        }
+    }
+    let height = max_y - min_y;
+    let lift = -feet_min;
+    if !lift.is_finite() || lift.abs() < 0.05 || !(height > 0.0) || lift.abs() > height * 0.15 {
+        return 0.0;
+    }
+    lift
+}
+
 /// 加载 VRM 模型，转换为 MmdModel 复用现有渲染管线
 pub fn load_vrm<P: AsRef<Path>>(path: P) -> Result<MmdModel> {
     load_vrm_with_extensions(path).map(|loaded| loaded.model)
@@ -402,6 +452,16 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
         xz_sign,
     );
 
+    // Stand on the ground: models whose soles are not at their origin (ILLGAMES characters export
+    // with the feet a few centimetres below it) are moved so the lowest point of the feet is at 0.
+    let lift = ground_lift(&mesh, &skin, &vrm_ext.humanoid);
+    if lift != 0.0 {
+        log::info!("ground: model moved up by {:.3} units so the feet stand on the ground", lift);
+        for v in &mut mesh.vertices {
+            v.position.y += lift;
+        }
+    }
+
     let bone_manager =
         vrm_skeleton::build_skeleton(
             &document,
@@ -410,6 +470,7 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
             &vrm_ext.humanoid,
             unit_scale,
             xz_sign,
+            lift,
         )?;
     let vrm_ext = remap_extensions_to_runtime_bones(vrm_ext, &skin);
 

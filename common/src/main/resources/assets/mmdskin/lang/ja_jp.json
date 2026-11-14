@@ -322,5 +322,16 @@
   "gui.mmdskin.config.outfit": "衣装",
   "gui.mmdskin.outfit.title": "衣装",
   "gui.mmdskin.outfit.close": "閉じる",
-  "message.mmdskin.outfit.none": "このモデルには衣装がありません。3D Model Renderer Studio でキャラクターカードに衣装プリセットを作成してください。"
+  "message.mmdskin.outfit.none": "このモデルには衣装がありません。3D Model Renderer Studio でキャラクターカードに衣装プリセットを作成してください。",
+  "item.mmdskin.model_tag": "モデルタグ",
+  "gui.mmdskin.companion.setup": "モデルタグ",
+  "gui.mmdskin.companion.interact": "交流",
+  "gui.mmdskin.companion.model": "モデル",
+  "gui.mmdskin.companion.lines": "セリフ",
+  "gui.mmdskin.companion.talk": "話す",
+  "gui.mmdskin.companion.animations": "モーション",
+  "gui.mmdskin.companion.model_title": "%s のモデル",
+  "gui.mmdskin.companion.lines_title": "%s のセリフ",
+  "gui.mmdskin.companion.line": "セリフ %s",
+  "message.mmdskin.companion.default_line": "こんにちは！"
 }

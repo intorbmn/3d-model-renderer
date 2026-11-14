@@ -1,5 +1,7 @@
 package com.shiroha.mmdskin.render.entity;
 
+import com.shiroha.mmdskin.companion.CompanionState;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.model.runtime.ManagedModel;
 import com.shiroha.mmdskin.model.runtime.ModelRequestKey;
@@ -40,7 +42,24 @@ public final class MobReplacementRenderer {
             float modelScale = model.renderProperties().modelScale();
 
             REUSABLE_POSE.reset();
-            EntityAnimationResolver.resolve(entity, model, entityYaw, tickDelta, REUSABLE_POSE);
+            // An animation a player picked for this mob (model tag companions) plays over its own.
+            CompanionState.Action action = CompanionState.action(entity.getUUID());
+            if (action != null) {
+                boolean moving = entity.getX() - entity.xo != 0.0 || entity.getZ() - entity.zo != 0.0;
+                if (moving && action.startedFor != null) {
+                    CompanionState.stop(entity.getUUID());
+                    action = null;
+                } else if (action.startedFor != model) {
+                    long animation = model.animationLibrary().animation(action.animId);
+                    if (animation != 0L) {
+                        model.modelInstance().transitionAnim(animation, 0, 0.25f);
+                    }
+                    action.startedFor = model;
+                    // Its own motion starts again afresh when the animation ends.
+                    model.entityState().stateLayers[0] = null;
+                }
+            }
+            EntityAnimationResolver.resolve(entity, model, entityYaw, tickDelta, REUSABLE_POSE, action == null);
 
             poseStack.pushPose();
             try {

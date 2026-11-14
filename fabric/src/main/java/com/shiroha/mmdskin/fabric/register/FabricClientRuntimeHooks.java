@@ -47,7 +47,10 @@ final class FabricClientRuntimeHooks {
     void register(Minecraft minecraft) {
         ClientTickEvents.END_CLIENT_TICK.register(client -> onClientTick(minecraft));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> client.execute(() -> onJoin(client)));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> onDisconnect());
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            com.shiroha.mmdskin.companion.CompanionState.clear();
+            onDisconnect();
+        });
         // 26.3 移除了 HudRenderCallback，HUD 元素改为注册到 HudElementRegistry。
         HudElementRegistry.addLast(
                 Identifier.fromNamespaceAndPath("mmdskin", "performance_hud"),

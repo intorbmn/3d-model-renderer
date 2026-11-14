@@ -48,6 +48,15 @@ final class FabricClientNetworkBindings {
             }
         });
 
+        com.shiroha.mmdskin.companion.CompanionHooks.sender = (opCode, entityId, data) -> {
+            LocalPlayer player = minecraft.player;
+            if (player != null) {
+                MmdSkinNetworkPack.sendToServer(opCode, player.getUUID(), entityId, data);
+            }
+        };
+        com.shiroha.mmdskin.companion.CompanionHooks.openSetup = com.shiroha.mmdskin.companion.CompanionWheelScreen::openSetup;
+        com.shiroha.mmdskin.companion.CompanionHooks.openInteraction = com.shiroha.mmdskin.companion.CompanionWheelScreen::openInteraction;
+
         MaidModelNetworkHandler.getInstance().setNetworkSender((entityId, modelName) -> {
             LocalPlayer player = minecraft.player;
             if (player != null) {

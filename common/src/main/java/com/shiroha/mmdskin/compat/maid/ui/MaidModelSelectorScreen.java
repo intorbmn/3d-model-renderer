@@ -46,7 +46,14 @@ public class MaidModelSelectorScreen extends Screen {
 
     MaidModelSelectorScreen(UUID maidUUID, int maidEntityId, String maidName,
                             MaidModelSelectionService maidModelSelectionService) {
-        super(Component.translatable("gui.mmdskin.maid_model_selector"));
+        this(maidUUID, maidEntityId, maidName, maidModelSelectionService,
+                Component.translatable("gui.mmdskin.maid_model_selector"));
+    }
+
+    /** The same selector for another entity (a mob given a model with the model tag). */
+    public MaidModelSelectorScreen(UUID maidUUID, int maidEntityId, String maidName,
+                                   MaidModelSelectionService maidModelSelectionService, Component title) {
+        super(title);
         this.maidUUID = maidUUID;
         this.maidEntityId = maidEntityId;
         this.maidName = maidName;

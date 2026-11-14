@@ -75,6 +75,11 @@ public class MmdSkinRegisterCommon {
             intArg = buf.readInt();
         }
 
+        if (com.shiroha.mmdskin.fabric.companion.CompanionServer.handles(opCode)) {
+            com.shiroha.mmdskin.fabric.companion.CompanionServer.handle(server, player, opCode, entityId, strData);
+            return;
+        }
+
         if (opCode == NetworkOpCode.MODEL_SELECT && strData != null) {
             ServerModelRegistry.updateModel(realUUID, strData);
         }

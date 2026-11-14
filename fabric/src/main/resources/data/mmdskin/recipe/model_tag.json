@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:name_tag",
+    "minecraft:amethyst_shard"
+  ],
+  "result": {
+    "id": "mmdskin:model_tag",
+    "count": 1
+  }
+}

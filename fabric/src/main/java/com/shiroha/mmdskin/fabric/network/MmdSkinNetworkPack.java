@@ -114,6 +114,15 @@ public class MmdSkinNetworkPack {
             com.shiroha.mmdskin.stage.client.StageClientPacketHandler.getInstance().handle(playerUUID, data);
             return;
         }
+        // Companions: the UUID is the mob's.
+        if (opCode == NetworkOpCode.COMPANION_SYNC) {
+            com.shiroha.mmdskin.companion.CompanionState.applySync(playerUUID, data);
+            return;
+        }
+        if (opCode == NetworkOpCode.COMPANION_PLAY) {
+            com.shiroha.mmdskin.companion.CompanionState.play(playerUUID, data);
+            return;
+        }
         if (playerUUID.equals(mc.player.getUUID())) return;
         if (mc.level == null) return;
 

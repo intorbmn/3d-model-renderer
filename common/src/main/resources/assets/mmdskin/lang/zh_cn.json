@@ -345,5 +345,16 @@
   "gui.mmdskin.config.outfit": "服装",
   "gui.mmdskin.outfit.title": "服装",
   "gui.mmdskin.outfit.close": "关闭",
-  "message.mmdskin.outfit.none": "此模型没有服装。请在 3D Model Renderer Studio 中为角色卡创建服装预设。"
+  "message.mmdskin.outfit.none": "此模型没有服装。请在 3D Model Renderer Studio 中为角色卡创建服装预设。",
+  "item.mmdskin.model_tag": "模型标签",
+  "gui.mmdskin.companion.setup": "模型标签",
+  "gui.mmdskin.companion.interact": "互动",
+  "gui.mmdskin.companion.model": "模型",
+  "gui.mmdskin.companion.lines": "台词",
+  "gui.mmdskin.companion.talk": "对话",
+  "gui.mmdskin.companion.animations": "动作",
+  "gui.mmdskin.companion.model_title": "%s 的模型",
+  "gui.mmdskin.companion.lines_title": "%s 的台词",
+  "gui.mmdskin.companion.line": "台词 %s",
+  "message.mmdskin.companion.default_line": "你好！"
 }

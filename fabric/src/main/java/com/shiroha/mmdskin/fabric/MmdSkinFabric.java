@@ -12,5 +12,7 @@ public class MmdSkinFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         MmdSkinRegisterCommon.Register();
+        com.shiroha.mmdskin.fabric.register.MmdSkinItems.register();
+        com.shiroha.mmdskin.fabric.companion.CompanionServer.register();
     }
 }

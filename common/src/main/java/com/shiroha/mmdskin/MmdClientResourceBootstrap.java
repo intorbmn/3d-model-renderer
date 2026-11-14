@@ -26,7 +26,7 @@ final class MmdClientResourceBootstrap {
             "itemActive_minecraft.shield_Left_using.vmd", "itemActive_minecraft.shield_Right_using.vmd",
             "lieDown.vmd", "onClimbable.vmd", "onClimbableDown.vmd", "onClimbableUp.vmd",
             "onHorse.vmd", "ride.vmd", "sleep.vmd", "sneak.vmd",
-            "sprint.vmd", "swim.vmd", "swingLeft.vmd", "swingRight.vmd", "walk.vmd"
+            "sprint.vmd", "swim.vmd", "swingLeft.vmd", "swingRight.vmd", "talk.vmd", "walk.vmd"
     };
 
     private MmdClientResourceBootstrap() {

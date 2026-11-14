@@ -18,6 +18,12 @@ public final class EntityAnimationResolver {
 
     public static void resolve(Entity entity, ManagedModel model,
                                 float entityYaw, float tickDelta, MutableRenderPose params) {
+        resolve(entity, model, entityYaw, tickDelta, params, true);
+    }
+
+    /** With `animate` false only the pose is filled in: an animation picked by a player is playing. */
+    public static void resolve(Entity entity, ManagedModel model,
+                                float entityYaw, float tickDelta, MutableRenderPose params, boolean animate) {
 
         if (entity instanceof LivingEntity living) {
             params.bodyYaw = Mth.rotLerp(tickDelta, living.yBodyRotO, living.yBodyRot);
@@ -26,6 +32,7 @@ public final class EntityAnimationResolver {
         }
         params.bodyPitch = 0.0f;
         params.translation.zero();
+        animating = animate;
 
         if (entity instanceof LivingEntity living) {
             if (living.getHealth() <= 0.0f) {
@@ -57,8 +64,13 @@ public final class EntityAnimationResolver {
         }
     }
 
+    private static boolean animating = true;
+
     private static void changeAnimOnce(ManagedModel model,
                                         EntityAnimState.State targetState, int layer) {
+        if (!animating) {
+            return;
+        }
         if (model.entityState().stateLayers[layer] != targetState) {
             model.entityState().stateLayers[layer] = targetState;
             String property = EntityAnimState.getPropertyName(targetState);

@@ -26,7 +26,13 @@ public class MaidActionWheelScreen extends AbstractWheelScreen {
     }
 
     MaidActionWheelScreen(UUID maidUUID, int maidEntityId, String maidName, MaidActionService maidActionService) {
-        super(Component.translatable("gui.mmdskin.maid_action_wheel"), STYLE);
+        this(maidUUID, maidEntityId, maidName, maidActionService, Component.translatable("gui.mmdskin.maid_action_wheel"));
+    }
+
+    /** The same wheel for another entity (a mob given a model with the model tag). */
+    public MaidActionWheelScreen(UUID maidUUID, int maidEntityId, String maidName, MaidActionService maidActionService,
+                                 Component title) {
+        super(title, STYLE);
         this.maidUUID = maidUUID;
         this.maidEntityId = maidEntityId;
         this.maidName = maidName;
