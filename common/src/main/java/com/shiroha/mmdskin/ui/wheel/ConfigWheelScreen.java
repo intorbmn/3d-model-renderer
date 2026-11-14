@@ -48,6 +48,9 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
         configSlots.add(new ConfigSlot("material",
                 Component.translatable("gui.mmdskin.config.material_control").getString(),
                 "mat", this::openMaterialVisibility));
+        configSlots.add(new ConfigSlot("outfit",
+                Component.translatable("gui.mmdskin.config.outfit").getString(),
+                "outfit", this::openOutfits));
         configSlots.add(new ConfigSlot("scene",
                 Component.translatable("gui.mmdskin.config.scene_mode").getString(),
                 "scene", this::openSceneSelector));
@@ -138,6 +141,13 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
         } else {
             Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
                     Component.translatable("message.mmdskin.player.model_not_found"));
+        }
+    }
+
+    private void openOutfits() {
+        Screen screen = com.shiroha.mmdskin.ui.selector.OutfitScreen.createForPlayer();
+        if (screen != null) {
+            Minecraft.getInstance().gui.setScreen(screen);
         }
     }
 

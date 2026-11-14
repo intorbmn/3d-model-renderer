@@ -341,5 +341,9 @@
   "gui.mmdskin.model_anim.slot.sneak": "潜行",
   "gui.mmdskin.model_anim.slot.onHorse": "骑马",
   "gui.mmdskin.model_anim.slot.crawl": "爬行",
-  "gui.mmdskin.model_anim.slot.lieDown": "趴下"
+  "gui.mmdskin.model_anim.slot.lieDown": "趴下",
+  "gui.mmdskin.config.outfit": "服装",
+  "gui.mmdskin.outfit.title": "服装",
+  "gui.mmdskin.outfit.close": "关闭",
+  "message.mmdskin.outfit.none": "此模型没有服装。请在 3D Model Renderer Studio 中为角色卡创建服装预设。"
 }

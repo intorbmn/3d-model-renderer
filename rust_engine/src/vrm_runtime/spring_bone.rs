@@ -1,11 +1,29 @@
-//! Spring-bone runtime adapted from UniVRM's spring-bone logic (MIT).
+//! Spring-bone runtime adapted from UniVRM's spring-bone logic (MIT), with the studio's additions:
+//!
+//! * a fixed time step (60 Hz, up to four steps a frame), so a slow frame does not throw hair
+//!   through the body;
+//! * jiggle chains (bust, hips): a damped spring around the rest pose instead of a swing;
+//! * a limit on how far a joint may turn away from its rest direction;
+//! * colliders that know the rest pose: a joint that already sits inside a collider at rest (hair
+//!   roots on the scalp) is only kept from going deeper, instead of being pushed out for good;
+//! * collisions resolved towards the side the tail came from, so a moving arm or shoulder cannot
+//!   pull hair through to its far side and trap it there.
+
+use std::f32::consts::TAU;
 
 use glam::{Mat4, Quat, Vec3};
 
 use crate::model::{
-    ColliderShape, SpringBoneCollider, SpringBoneData, SpringBoneJoint, SpringBoneSpring,
+    ColliderShape, SpringBoneCollider, SpringBoneData, SpringBoneJoint, SpringBoneSpring, SpringMode,
 };
 use crate::skeleton::BoneManager;
+
+/// Physics step, in seconds.
+const STEP: f32 = 1.0 / 60.0;
+/// At most this many steps a frame; time beyond that is dropped (a long hitch, a loading pause).
+const MAX_STEPS: u32 = 4;
+/// A tail further than this many bone lengths from its bone is reset to the rest pose.
+const RESET_DISTANCE: f32 = 4.0;
 
 #[derive(Clone, Copy, Debug)]
 enum TailSpace {
@@ -50,7 +68,7 @@ impl TailState {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct SpringJointRuntime {
     bone_index: usize,
     bone_axis: Vec3,
@@ -62,12 +80,19 @@ struct SpringJointRuntime {
     gravity_dir: Vec3,
     drag_force: f32,
     state: TailState,
+    /// Tail velocity of a jiggle joint (model units per second).
+    velocity: Vec3,
+    /// Per collider of the chain: how close the tail may come to it (collider radius plus hit
+    /// radius, or less when the tail is closer than that at rest; 0 = ignored).
+    collider_limits: Vec<f32>,
 }
 
 #[derive(Clone, Debug)]
 struct SpringChainRuntime {
     joints: Vec<SpringJointRuntime>,
     collider_indices: Vec<usize>,
+    mode: SpringMode,
+    max_angle: Option<f32>,
 }
 
 #[derive(Clone, Debug)]
@@ -79,6 +104,7 @@ struct ResolvedCollider {
 pub struct SpringBoneRuntime {
     chains: Vec<SpringChainRuntime>,
     colliders: Vec<ResolvedCollider>,
+    accumulator: f32,
 }
 
 impl SpringBoneRuntime {
@@ -105,7 +131,11 @@ impl SpringBoneRuntime {
             .filter_map(|spring| resolve_chain(spring, &spring_meta, &colliders, bones))
             .collect();
 
-        Self { chains, colliders }
+        Self {
+            chains,
+            colliders,
+            accumulator: 0.0,
+        }
     }
 
     #[allow(dead_code)]
@@ -121,52 +151,84 @@ impl SpringBoneRuntime {
         delta_time: f32,
         external: impl Fn(Vec3) -> Vec3,
     ) {
-        if self.chains.is_empty() || delta_time <= 0.0 {
+        if self.chains.is_empty() || !(delta_time > 0.0) {
             return;
         }
+        self.accumulator = (self.accumulator + delta_time).min(STEP * MAX_STEPS as f32);
+        let mut steps = 0;
+        while self.accumulator >= STEP && steps < MAX_STEPS {
+            self.step(bones, STEP, &external);
+            self.accumulator -= STEP;
+            steps += 1;
+        }
+        if steps == 0 {
+            // No step this frame (a high frame rate): the animation has put the bones back in
+            // their pose, so turn them to where the tails are.
+            self.pose(bones);
+        }
+    }
 
+    fn step(&mut self, bones: &mut BoneManager, h: f32, external: &impl Fn(Vec3) -> Vec3) {
         for chain in &mut self.chains {
             for joint in &mut chain.joints {
                 let Some(transform) = bones.get_bone(joint.bone_index) else {
                     continue;
                 };
-                let current_tail = joint.state.current_world(bones);
-                let prev_tail = joint.state.prev_world(bones);
                 let bone_position = transform.position();
-                let parent_rotation = transform
-                    .parent_id()
-                    .and_then(|index| bones.get_bone(index))
-                    .map(|parent| parent.rotation())
-                    .unwrap_or(Quat::IDENTITY);
-
-                let mut next_tail = current_tail
-                    + (current_tail - prev_tail) * (1.0 - joint.drag_force)
-                    + (parent_rotation * joint.init_local_rotation * joint.bone_axis)
-                        * (joint.stiffness * delta_time)
-                    + joint.gravity_dir * (joint.gravity_power * delta_time)
-                    + external(current_tail) * (delta_time * delta_time);
-
-                let direction = (next_tail - bone_position).normalize_or_zero();
-                if direction.length_squared() <= 1e-6 {
-                    next_tail = bone_position
-                        + (parent_rotation * joint.init_local_rotation * joint.bone_axis)
-                            * joint.rest_length;
-                } else {
-                    next_tail = bone_position + direction * joint.rest_length;
+                let parent_rotation = parent_rotation_of(bones, joint.bone_index);
+                let rest_dir = (parent_rotation * joint.init_local_rotation * joint.bone_axis).normalize_or_zero();
+                let rest_tail = bone_position + rest_dir * joint.rest_length;
+                let mut current_tail = joint.state.current_world(bones);
+                let mut prev_tail = joint.state.prev_world(bones);
+                if !current_tail.is_finite()
+                    || !prev_tail.is_finite()
+                    || (current_tail - bone_position).length() > joint.rest_length * RESET_DISTANCE
+                {
+                    current_tail = rest_tail;
+                    prev_tail = rest_tail;
+                    joint.velocity = Vec3::ZERO;
                 }
 
-                for &collider_index in &chain.collider_indices {
+                let mut next_tail = match chain.mode {
+                    SpringMode::Spring => {
+                        current_tail
+                            + (current_tail - prev_tail) * (1.0 - joint.drag_force)
+                            + rest_dir * (joint.stiffness * h)
+                            + joint.gravity_dir * (joint.gravity_power * h)
+                            + external(current_tail) * (h * h)
+                    }
+                    SpringMode::Jiggle => {
+                        let (omega, zeta) = jiggle_constants(joint.stiffness, joint.drag_force);
+                        let target = rest_tail + joint.gravity_dir * (joint.gravity_power * joint.rest_length);
+                        let acceleration = (target - current_tail) * (omega * omega)
+                            - joint.velocity * (2.0 * zeta * omega)
+                            + external(current_tail);
+                        joint.velocity += acceleration * h;
+                        current_tail + joint.velocity * h
+                    }
+                };
+
+                next_tail = keep_length(bone_position, next_tail, rest_dir, joint.rest_length);
+                if let Some(max_angle) = chain.max_angle {
+                    next_tail = limit_angle(bone_position, next_tail, rest_dir, joint.rest_length, max_angle);
+                }
+
+                for (slot, &collider_index) in chain.collider_indices.iter().enumerate() {
+                    let limit = joint.collider_limits.get(slot).copied().unwrap_or(0.0);
                     let Some(collider) = self.colliders.get(collider_index) else {
                         continue;
                     };
-                    if let Some(pushed_tail) =
-                        collide_tail(bones, collider, joint.hit_radius, next_tail)
-                    {
-                        let corrected_dir = (pushed_tail - bone_position).normalize_or_zero();
-                        if corrected_dir.length_squared() > 1e-6 {
-                            next_tail = bone_position + corrected_dir * joint.rest_length;
-                        }
+                    if limit <= 0.0 {
+                        continue;
                     }
+                    if let Some(pushed_tail) = collide_tail(bones, collider, limit, next_tail, current_tail) {
+                        next_tail = keep_length(bone_position, pushed_tail, rest_dir, joint.rest_length);
+                    }
+                }
+
+                if chain.mode == SpringMode::Jiggle {
+                    // What the constraints took away is not carried into the next step.
+                    joint.velocity = (next_tail - current_tail) / h;
                 }
 
                 let world_rotation = world_rotation_from_tail(
@@ -185,10 +247,77 @@ impl SpringBoneRuntime {
         }
     }
 
+    fn pose(&mut self, bones: &mut BoneManager) {
+        for chain in &self.chains {
+            for joint in &chain.joints {
+                let Some(transform) = bones.get_bone(joint.bone_index) else {
+                    continue;
+                };
+                let bone_position = transform.position();
+                let tail = joint.state.current_world(bones);
+                if !tail.is_finite() {
+                    continue;
+                }
+                let world_rotation = world_rotation_from_tail(
+                    bones,
+                    joint.bone_index,
+                    joint.init_local_rotation,
+                    joint.bone_axis,
+                    tail,
+                );
+                bones.set_global_transform(
+                    joint.bone_index,
+                    Mat4::from_rotation_translation(world_rotation, bone_position),
+                );
+            }
+        }
+    }
+
     #[cfg(test)]
     pub fn len(&self) -> usize {
         self.chains.len()
     }
+}
+
+/// Angular frequency (rad/s) and damping ratio of a jiggle joint: stiffness 0..4 gives 1..7 Hz,
+/// drag 0..1 a damping ratio of 0.1..0.9.
+fn jiggle_constants(stiffness: f32, drag: f32) -> (f32, f32) {
+    let frequency = 1.0 + 1.5 * stiffness.clamp(0.0, 4.0);
+    (TAU * frequency, 0.1 + 0.8 * drag.clamp(0.0, 1.0))
+}
+
+fn parent_rotation_of(bones: &BoneManager, bone_index: usize) -> Quat {
+    bones
+        .get_bone(bone_index)
+        .and_then(|bone| bone.parent_id())
+        .and_then(|index| bones.get_bone(index))
+        .map(|parent| parent.rotation())
+        .unwrap_or(Quat::IDENTITY)
+}
+
+fn keep_length(bone_position: Vec3, tail: Vec3, fallback_dir: Vec3, length: f32) -> Vec3 {
+    let direction = (tail - bone_position).normalize_or_zero();
+    if direction.length_squared() <= 1e-6 {
+        bone_position + fallback_dir * length
+    } else {
+        bone_position + direction * length
+    }
+}
+
+fn limit_angle(bone_position: Vec3, tail: Vec3, rest_dir: Vec3, length: f32, max_angle: f32) -> Vec3 {
+    let direction = (tail - bone_position).normalize_or_zero();
+    if direction.length_squared() <= 1e-6 || rest_dir.length_squared() <= 1e-6 {
+        return tail;
+    }
+    let angle = rest_dir.angle_between(direction);
+    if !(angle > max_angle) {
+        return tail;
+    }
+    let axis = rest_dir.cross(direction).normalize_or_zero();
+    if axis.length_squared() <= 1e-6 {
+        return bone_position + rest_dir * length;
+    }
+    bone_position + Quat::from_axis_angle(axis, max_angle) * rest_dir * length
 }
 
 fn resolve_collider(collider: SpringBoneCollider, bones: &BoneManager) -> Option<ResolvedCollider> {
@@ -217,12 +346,24 @@ fn resolve_chain(
         .filter(|index| *index < colliders.len())
         .collect::<Vec<_>>();
 
+    // With `last_is_tail`, the last joint only gives the one before it its tail.
+    let simulated = if spring.settings.last_is_tail {
+        spring.joints.len().saturating_sub(1)
+    } else {
+        spring.joints.len()
+    };
     let mut joints = Vec::new();
-    for (joint_index, joint) in spring.joints.iter().enumerate() {
-        let Some(resolved) = resolve_joint(joint, spring.joints.get(joint_index + 1), space, bones)
+    for joint_index in 0..simulated {
+        let joint = &spring.joints[joint_index];
+        let Some(mut resolved) = resolve_joint(joint, spring.joints.get(joint_index + 1), space, bones)
         else {
             continue;
         };
+        let rest_tail = resolved.state.current_world(bones);
+        resolved.collider_limits = collider_indices
+            .iter()
+            .map(|&index| rest_limit(bones, &colliders[index], resolved.hit_radius, rest_tail))
+            .collect();
         joints.push(resolved);
     }
 
@@ -232,7 +373,24 @@ fn resolve_chain(
         Some(SpringChainRuntime {
             joints,
             collider_indices,
+            mode: spring.settings.mode,
+            max_angle: spring.settings.max_angle,
         })
+    }
+}
+
+/// How close a tail may come to a collider: its radius plus the hit radius, or (a little less
+/// than) the distance it has at rest when it already sits closer than that.
+fn rest_limit(bones: &BoneManager, collider: &ResolvedCollider, hit_radius: f32, rest_tail: Vec3) -> f32 {
+    let Some((closest, radius)) = closest_on_collider(bones, collider, rest_tail) else {
+        return 0.0;
+    };
+    let full = radius + hit_radius;
+    let distance = (rest_tail - closest).length();
+    if distance >= full {
+        full
+    } else {
+        distance * 0.95
     }
 }
 
@@ -268,7 +426,7 @@ fn resolve_joint(
     Some(SpringJointRuntime {
         bone_index: joint.node,
         bone_axis: local_child_position.normalize(),
-        rest_length,
+        rest_length: (child_world_position - bone.position()).length().max(1e-6),
         init_local_rotation,
         hit_radius: joint.hit_radius,
         stiffness: joint.stiffness,
@@ -276,6 +434,8 @@ fn resolve_joint(
         gravity_dir: Vec3::from_array(joint.gravity_dir).normalize_or_zero(),
         drag_force: joint.drag_force.clamp(0.0, 1.0),
         state,
+        velocity: Vec3::ZERO,
+        collider_limits: Vec::new(),
     })
 }
 
@@ -336,17 +496,13 @@ fn world_rotation_from_tail(
     }
 }
 
-fn collide_tail(
-    bones: &BoneManager,
-    collider: &ResolvedCollider,
-    hit_radius: f32,
-    next_tail: Vec3,
-) -> Option<Vec3> {
+/// The point of a collider's core (sphere centre or capsule segment) closest to `point`, and the
+/// collider's radius.
+fn closest_on_collider(bones: &BoneManager, collider: &ResolvedCollider, point: Vec3) -> Option<(Vec3, f32)> {
     let collider_transform = bones.get_bone(collider.node)?.global_transform();
-    match collider.shape {
+    Some(match collider.shape {
         ColliderShape::Sphere { offset, radius } => {
-            let center = collider_transform.transform_point3(Vec3::from_array(offset));
-            push_out_from_sphere(center, radius + hit_radius, next_tail)
+            (collider_transform.transform_point3(Vec3::from_array(offset)), radius)
         }
         ColliderShape::Capsule {
             offset,
@@ -355,23 +511,35 @@ fn collide_tail(
         } => {
             let start = collider_transform.transform_point3(Vec3::from_array(offset));
             let end = collider_transform.transform_point3(Vec3::from_array(tail));
-            let closest = closest_point_on_segment(start, end, next_tail);
-            push_out_from_sphere(closest, radius + hit_radius, next_tail)
+            (closest_point_on_segment(start, end, point), radius)
         }
-    }
+    })
 }
 
-fn push_out_from_sphere(center: Vec3, radius: f32, point: Vec3) -> Option<Vec3> {
-    let offset = point - center;
-    if offset.length_squared() > radius * radius {
+/// Keeps `next_tail` at least `limit` away from the collider, pushing it out on the side the tail
+/// came from (`current_tail`), so it cannot be pulled through to the other side.
+fn collide_tail(
+    bones: &BoneManager,
+    collider: &ResolvedCollider,
+    limit: f32,
+    next_tail: Vec3,
+    current_tail: Vec3,
+) -> Option<Vec3> {
+    let (closest, _) = closest_on_collider(bones, collider, next_tail)?;
+    let offset = next_tail - closest;
+    if offset.length_squared() >= limit * limit {
         return None;
     }
-    let normal = if offset.length_squared() <= 1e-6 {
-        Vec3::Y
-    } else {
+    let (closest_current, _) = closest_on_collider(bones, collider, current_tail)?;
+    let from_current = current_tail - closest_current;
+    let normal = if from_current.length_squared() > 1e-8 {
+        from_current.normalize()
+    } else if offset.length_squared() > 1e-8 {
         offset.normalize()
+    } else {
+        Vec3::Y
     };
-    Some(center + normal * radius)
+    Some(closest + normal * limit)
 }
 
 fn closest_point_on_segment(start: Vec3, end: Vec3, point: Vec3) -> Vec3 {
@@ -388,7 +556,7 @@ fn closest_point_on_segment(start: Vec3, end: Vec3, point: Vec3) -> Vec3 {
 mod tests {
     use super::*;
     use crate::model::{
-        ColliderShape, SpringBoneCollider, SpringBoneColliderGroup, SpringBoneData,
+        ColliderShape, SpringBoneCollider, SpringBoneColliderGroup, SpringBoneData, SpringSettings,
     };
     use crate::skeleton::{BoneLink, BoneManager};
 
@@ -425,7 +593,7 @@ mod tests {
             },
         };
 
-        let pushed = collide_tail(&bones, &collider, 0.2, Vec3::new(0.0, 1.1, 0.0)).unwrap();
+        let pushed = collide_tail(&bones, &collider, 0.7, Vec3::new(0.0, 1.1, 0.0), Vec3::new(0.0, 1.1, 0.0)).unwrap();
         assert!((pushed - Vec3::new(0.0, 1.0, 0.0)).length() >= 0.7 - 1e-5);
     }
 
@@ -441,7 +609,7 @@ mod tests {
             },
         };
 
-        let pushed = collide_tail(&bones, &collider, 0.2, Vec3::new(0.1, 1.0, 0.0)).unwrap();
+        let pushed = collide_tail(&bones, &collider, 0.4, Vec3::new(0.1, 1.0, 0.0), Vec3::new(0.1, 1.0, 0.0)).unwrap();
         assert!(pushed.x.abs() >= 0.39);
     }
 
@@ -482,6 +650,7 @@ mod tests {
                 ],
                 collider_groups: vec![0],
                 center: Some(1),
+                settings: SpringSettings::default(),
             }],
             colliders: vec![SpringBoneCollider {
                 node: 0,
@@ -499,5 +668,123 @@ mod tests {
         assert_eq!(runtime.len(), 1);
         let bone = bones.get_bone(1).unwrap();
         assert!(bone.rotation().length_squared() > 0.0);
+    }
+
+    fn joint(node: usize, stiffness: f32, gravity: f32, drag: f32) -> SpringBoneJoint {
+        SpringBoneJoint {
+            node,
+            hit_radius: 0.0,
+            stiffness,
+            gravity_power: gravity,
+            gravity_dir: [0.0, -1.0, 0.0],
+            drag_force: drag,
+        }
+    }
+
+    fn tip(bones: &BoneManager) -> Vec3 {
+        bones.get_bone(2).unwrap().position()
+    }
+
+    #[test]
+    fn last_joint_of_a_studio_chain_is_only_a_tail() {
+        let mut bones = build_chain_bones();
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![joint(1, 1.0, 0.0, 0.4), joint(2, 1.0, 0.0, 0.4)],
+                collider_groups: vec![],
+                center: None,
+                settings: SpringSettings { last_is_tail: true, ..SpringSettings::default() },
+            }],
+            colliders: vec![],
+            collider_groups: vec![],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+        assert_eq!(runtime.chains[0].joints.len(), 1, "bone_b is the tail, not a joint");
+        runtime.process(&mut bones, 0.1);
+        assert!((tip(&bones) - Vec3::new(0.0, 2.0, 0.0)).length() < 1e-3, "no force: stays at rest");
+    }
+
+    #[test]
+    fn jiggle_sags_a_little_and_settles_at_rest_plus_sag() {
+        // A bone pointing sideways (like a bust pointing forwards).
+        let mut bones = BoneManager::new();
+        let mut root = BoneLink::new("root".to_string());
+        root.parent_index = -1;
+        bones.add_bone(root);
+        let mut a = BoneLink::new("a".to_string());
+        a.initial_position = Vec3::new(0.0, 1.0, 0.0);
+        a.parent_index = 0;
+        bones.add_bone(a);
+        let mut b = BoneLink::new("b".to_string());
+        b.initial_position = Vec3::new(1.0, 1.0, 0.0);
+        b.parent_index = 1;
+        bones.add_bone(b);
+        bones.build_hierarchy();
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![joint(1, 2.0, 0.1, 0.6), joint(2, 2.0, 0.1, 0.6)],
+                collider_groups: vec![],
+                center: None,
+                settings: SpringSettings {
+                    mode: SpringMode::Jiggle,
+                    last_is_tail: true,
+                    max_angle: Some(25f32.to_radians()),
+                },
+            }],
+            colliders: vec![],
+            collider_groups: vec![],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+        for _ in 0..240 {
+            runtime.process(&mut bones, 1.0 / 60.0);
+        }
+        let end = tip(&bones);
+        assert!(end.y < 1.0 && end.y > 0.85, "sags by about a tenth of the length: {end}");
+        assert!((end - Vec3::new(0.0, 1.0, 0.0)).length() - 1.0 < 1e-3, "keeps its length");
+    }
+
+    #[test]
+    fn a_tail_inside_a_collider_at_rest_is_not_pushed_out() {
+        let mut bones = build_chain_bones();
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![joint(1, 1.0, 0.0, 0.4), joint(2, 1.0, 0.0, 0.4)],
+                collider_groups: vec![0],
+                center: None,
+                settings: SpringSettings { last_is_tail: true, ..SpringSettings::default() },
+            }],
+            // A sphere around the tail at rest (like a head collider around hair roots).
+            colliders: vec![SpringBoneCollider {
+                node: 0,
+                shape: ColliderShape::Sphere { offset: [0.3, 2.0, 0.0], radius: 0.5 },
+            }],
+            collider_groups: vec![SpringBoneColliderGroup { colliders: vec![0] }],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+        for _ in 0..60 {
+            runtime.process(&mut bones, 1.0 / 60.0);
+        }
+        assert!((tip(&bones) - Vec3::new(0.0, 2.0, 0.0)).length() < 0.02, "stays where it rests: {}", tip(&bones));
+    }
+
+    #[test]
+    fn a_long_frame_is_split_into_steps() {
+        let mut bones = build_chain_bones();
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![joint(1, 0.0, 5.0, 0.4), joint(2, 0.0, 5.0, 0.4)],
+                collider_groups: vec![],
+                center: None,
+                settings: SpringSettings { last_is_tail: true, ..SpringSettings::default() },
+            }],
+            colliders: vec![],
+            collider_groups: vec![],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+        runtime.process(&mut bones, 0.05); // three steps
+        assert!(runtime.accumulator < STEP);
+        runtime.process(&mut bones, 10.0); // a hitch: at most four steps, the rest dropped
+        assert!(runtime.accumulator < STEP);
+        assert!(tip(&bones).is_finite());
     }
 }

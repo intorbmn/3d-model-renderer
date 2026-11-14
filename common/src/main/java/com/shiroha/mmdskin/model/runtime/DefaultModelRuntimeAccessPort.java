@@ -71,6 +71,13 @@ public final class DefaultModelRuntimeAccessPort implements ModelRuntimeAccessPo
     }
 
     @Override
+    public String getMaterialName(long modelHandle, int materialIndex) {
+        return nativeModelPort instanceof com.shiroha.mmdskin.bridge.runtime.NativeModelQueryPort query
+                ? query.getMaterialName(modelHandle, materialIndex)
+                : null;
+    }
+
+    @Override
     public void preloadTexture(String texturePath) {
         TextureRepository.preloadTexture(texturePath);
     }

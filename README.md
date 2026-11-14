@@ -36,7 +36,7 @@ Things changed since the last test build, worth checking in game:
 
 - **Physics follows the player.** Hair, skirts and bust should lag when you start or stop moving, trail back while walking or sprinting, swing out when you turn, and not fly off when you teleport. Strength: *Inertia Strength* in the mod settings (50 = realistic, the default).
 - **Spring-bone models (VRM, and GLB/glTF cards)**: colliders now have the right size, so hair should stay outside the head and body.
-- **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups.
+- **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups. Open the config wheel → **Outfit** on a card with outfit presets and switch outfits; move around to check hair and bust physics.
 - **Held items** on GLB/glTF models: a sword should be held edge-forward, not lying flat.
 
 ## Installation
@@ -74,6 +74,10 @@ The original documentation (in Chinese) covers the folder layout, animation load
 A model card is a single PNG: the picture is the character, and the whole model (body, outfit, textures, shape, size and colour settings, physics) is packed behind it, like a Koikatsu card. Make cards with [3D Model Renderer Studio](https://github.com/intorbmn/3d-model-renderer-studio), which runs in the browser and officially supports characters exported from ILLGAMES games (body and face sliders, outfit slots, physics). Other models (PMX/PMD, VRM, GLB, ...) do not need a card: they work as in MMD Skin, from a model folder in `3d-skin`. Drop the `.png` into `3d-skin/Cards/`. Cards are listed first in the model selector, highlighted with a **CARD** badge; plain model folders keep working as before.
 
 Cards carry their shape: the slider edits (bones moved, turned and scaled like the character makers of ILLGAMES titles) and hidden pieces are baked into the model when the mod loads it. The outfit is part of the card's model and shares the body's skeleton, so it follows the body's bones and physics; models whose pieces have skeletons of their own are mapped onto the first one by bone. Cards always carry physics: hair, clothing, body and custom groups, which the mod runs in place of the model's own spring bones. ILLGAMES game cards (Koikatsu, AI Shoujo, Honey Select 2, Honey Come, ...) hold maker settings, not a 3D model, so the mod cannot load them; export the character with the studio's KKBP script instead.
+
+**Outfits in game.** A character card can carry several outfits as presets made in the studio. Open the config wheel and pick **Outfit** to switch between them; the choice is kept per model (picking materials by hand in Material Control replaces it). Cards without presets show a message instead.
+
+**Physics.** Card physics run at a fixed 60 Hz with the same solver as the studio's preview: hair and clothing swing like VRM spring bones, bust and hips (body groups) bounce around their rest pose, every joint stays within its group's maximum angle, and colliders know the rest pose, so hair resting on the scalp is not pushed away and a moving arm cannot trap hair on its far side.
 
 ### GLB/glTF models and animation
 

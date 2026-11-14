@@ -329,5 +329,9 @@
   "gui.mmdskin.model_anim.slot.sneak": "Sneak",
   "gui.mmdskin.model_anim.slot.onHorse": "On Horse",
   "gui.mmdskin.model_anim.slot.crawl": "Crawl",
-  "gui.mmdskin.model_anim.slot.lieDown": "Lie Down"
+  "gui.mmdskin.model_anim.slot.lieDown": "Lie Down",
+  "gui.mmdskin.config.outfit": "Outfit",
+  "gui.mmdskin.outfit.title": "Outfit",
+  "gui.mmdskin.outfit.close": "Close",
+  "message.mmdskin.outfit.none": "This model has no outfits. Make outfit presets for a character card in 3D Model Renderer Studio."
 }

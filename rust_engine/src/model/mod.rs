@@ -24,7 +24,7 @@ pub use vrm_extensions::{
     ColliderShape, ConstraintAxis, ExpressionOverride, FirstPersonConfig,
     FirstPersonMeshAnnotation, FirstPersonType, LookAtConfig, LookAtRangeMap, LookAtType,
     NodeConstraint, NodeConstraintKind, SpringBoneCollider, SpringBoneColliderGroup,
-    SpringBoneData, SpringBoneJoint, SpringBoneSpring, VrmExpressionClip, VrmExpressions,
+    SpringBoneData, SpringBoneJoint, SpringBoneSpring, SpringMode, SpringSettings, VrmExpressionClip, VrmExpressions,
     VrmExtensions, VrmVersion,
 };
 pub use vrm_loader::{describe_gltf_humanoid, load_vrm, load_vrm_with_extensions, LoadedVrmModel};

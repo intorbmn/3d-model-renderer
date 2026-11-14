@@ -21,6 +21,11 @@ public interface ModelRuntimeAccessPort {
 
     void setMaterialVisible(long modelHandle, int materialIndex, boolean visible);
 
+    /** The material's name, or null when it cannot be read. */
+    default String getMaterialName(long modelHandle, int materialIndex) {
+        return null;
+    }
+
     void preloadTexture(String texturePath);
 
     void clearPreloadedTextures();

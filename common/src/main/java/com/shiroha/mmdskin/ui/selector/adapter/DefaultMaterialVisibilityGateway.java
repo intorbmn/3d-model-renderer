@@ -177,6 +177,7 @@ public class DefaultMaterialVisibilityGateway implements MaterialVisibilityGatew
     private static void persistHiddenMaterials(String configModelName, Set<Integer> hiddenMaterials) {
         ModelConfigData config = ModelConfigManager.getConfig(configModelName);
         config.hiddenMaterials = hiddenMaterials == null ? new HashSet<>() : new HashSet<>(hiddenMaterials);
+        config.outfit = null; // picked by hand: no longer one of the card's outfits
         ModelConfigManager.saveConfig(configModelName, config);
     }
 }

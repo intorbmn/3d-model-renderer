@@ -41,6 +41,9 @@ public class ModelConfigData {
 
     public Set<Integer> hiddenMaterials = new HashSet<>();
 
+    /** The outfit preset picked in game for a card with outfits (null: the card's default). */
+    public String outfit = null;
+
     public static ModelConfigData load(File configFile) {
         if (!configFile.exists()) {
             return new ModelConfigData();
@@ -65,6 +68,7 @@ public class ModelConfigData {
         c.modelScale = this.modelScale;
         c.heldItemScale = this.heldItemScale;
         c.hiddenMaterials = this.hiddenMaterials == null ? new HashSet<>() : new HashSet<>(this.hiddenMaterials);
+        c.outfit = this.outfit;
         return c;
     }
 

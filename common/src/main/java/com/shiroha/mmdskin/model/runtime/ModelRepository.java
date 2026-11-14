@@ -163,7 +163,7 @@ public final class ModelRepository implements ModelRepositoryPort, ModelDiagnost
                 ModelRenderProperties.from(properties));
         modelInstance.resetPhysics();
         modelInstance.changeAnim(managedModel.animationLibrary().animation("idle"), 0);
-        applyMaterialVisibility(modelInstance.getModelHandle(), requestKey.modelName());
+        applyMaterialVisibility(modelInstance.getModelHandle(), requestKey.modelName(), modelInstance.getModelDir());
         return managedModel;
     }
 
@@ -173,13 +173,25 @@ public final class ModelRepository implements ModelRepositoryPort, ModelDiagnost
         return properties;
     }
 
-    private void applyMaterialVisibility(long modelHandle, String modelName) {
+    private void applyMaterialVisibility(long modelHandle, String modelName, String modelDir) {
         try {
             ModelConfigData config = ModelConfigManager.getConfig(modelName);
+            int materialCount = runtimeAccessPort.getMaterialCount(modelHandle);
+            // A card with outfit presets wears the one picked in game, or its default outfit.
+            var presets = com.shiroha.mmdskin.asset.catalog.OutfitPresets.load(
+                    modelDir == null ? null : java.nio.file.Path.of(modelDir));
+            if (presets.isPresent() && (config.outfit != null || config.hiddenMaterials.isEmpty())) {
+                var preset = presets.get().find(config.outfit);
+                var hidden = com.shiroha.mmdskin.asset.catalog.OutfitPresets.hiddenIndices(
+                        preset, materialCount, index -> runtimeAccessPort.getMaterialName(modelHandle, index));
+                for (int index = 0; index < materialCount; index++) {
+                    runtimeAccessPort.setMaterialVisible(modelHandle, index, !hidden.contains(index));
+                }
+                return;
+            }
             if (config.hiddenMaterials.isEmpty()) {
                 return;
             }
-            int materialCount = runtimeAccessPort.getMaterialCount(modelHandle);
             for (int index : config.hiddenMaterials) {
                 if (index >= 0 && index < materialCount) {
                     runtimeAccessPort.setMaterialVisible(modelHandle, index, false);

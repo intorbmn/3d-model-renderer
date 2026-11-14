@@ -39,6 +39,8 @@ public final class ModelCardFile {
     public static final String PHYSICS_FILE = "physics.json";
     /** Character-maker edits of the card, read by the engine for glTF/VRM models. */
     public static final String SHAPE_FILE = "shape.json";
+    /** Outfit presets of a character card, switchable in game. */
+    public static final String OUTFITS_FILE = OutfitPresets.FILE;
     private static final byte[] MAGIC = "3DMRCARD".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_MAGIC = "3DMR-END".getBytes(StandardCharsets.US_ASCII);
     private static final List<String> MODEL_TYPES = List.of("pmx", "pmd", "vrm", "glb", "gltf");
@@ -189,6 +191,10 @@ public final class ModelCardFile {
                 // rest pose when it loads the model.
                 if (manifest.has("shape") && manifest.get("shape").isJsonObject() && modelDir != null) {
                     Files.writeString(modelDir.resolve(SHAPE_FILE), manifest.get("shape").toString(), StandardCharsets.UTF_8);
+                }
+                // Outfit presets: which pieces each outfit shows (the outfit screen switches them).
+                if (manifest.has("outfits") && manifest.get("outfits").isJsonObject() && modelDir != null) {
+                    Files.writeString(modelDir.resolve(OUTFITS_FILE), manifest.get("outfits").toString(), StandardCharsets.UTF_8);
                 }
                 try {
                     Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);

@@ -25,7 +25,7 @@ use serde_json::Value;
 
 use super::vrm_extensions::{
     ColliderShape, SpringBoneCollider, SpringBoneColliderGroup, SpringBoneData, SpringBoneJoint,
-    SpringBoneSpring,
+    SpringBoneSpring, SpringMode, SpringSettings,
 };
 
 /// Group kinds the mod knows; anything else is treated as `custom`.
@@ -115,6 +115,20 @@ pub fn parse(json: &Value, node_by_name: &HashMap<String, usize>) -> (SpringBone
         let gravity_power = f32_of(group.get("gravity"), 0.0).clamp(0.0, 10.0);
         let gravity_dir = vec3_of(group.get("gravityDir"), [0.0, -1.0, 0.0]);
         let hit_radius = f32_of(group.get("radius"), 0.0).max(0.0);
+        // Body groups (bust, hips) bounce around their rest pose; the rest swing like hair.
+        let mode = match group.get("mode").and_then(Value::as_str) {
+            Some("jiggle") => SpringMode::Jiggle,
+            Some("spring") => SpringMode::Spring,
+            _ if kind == "body" => SpringMode::Jiggle,
+            _ => SpringMode::Spring,
+        };
+        let default_angle = match kind.as_str() {
+            "body" => 25.0,
+            "clothing" => 70.0,
+            _ => 80.0,
+        };
+        let max_angle = f32_of(group.get("maxAngle"), default_angle).clamp(1.0, 180.0).to_radians();
+        let settings = SpringSettings { mode, last_is_tail: true, max_angle: Some(max_angle) };
         let collider_groups: Vec<usize> = group
             .get("colliders")
             .and_then(Value::as_array)
@@ -138,7 +152,7 @@ pub fn parse(json: &Value, node_by_name: &HashMap<String, usize>) -> (SpringBone
                 continue;
             }
             chains += 1;
-            data.springs.push(SpringBoneSpring { joints, collider_groups: collider_groups.clone(), center: None });
+            data.springs.push(SpringBoneSpring { joints, collider_groups: collider_groups.clone(), center: None, settings });
         }
         infos.push(GroupInfo { name, kind, chains });
     }

@@ -36,7 +36,7 @@ Những thay đổi từ bản test trước, cần kiểm tra trong game:
 
 - **Vật lý theo người chơi.** Tóc, váy, ngực phải giật lại khi bắt đầu hoặc dừng di chuyển, bị kéo về sau khi đi hoặc chạy, văng ra khi xoay người, và không bay loạn khi dịch chuyển. Độ mạnh: mục *Inertia Strength* trong cài đặt mod (50 = đúng như thật, mặc định).
 - **Model có spring bone (VRM, card GLB/glTF)**: vùng va chạm đã đúng kích thước, tóc không còn xuyên vào đầu và người.
-- **Card**: bỏ card tạo từ studio vào `3d-skin/Cards/`, mở danh sách chọn model (card nằm đầu, có nhãn **CARD** màu hồng), chọn card và xem kích thước, màu, nhóm vật lý.
+- **Card**: bỏ card tạo từ studio vào `3d-skin/Cards/`, mở danh sách chọn model (card nằm đầu, có nhãn **CARD** màu hồng), chọn card và xem kích thước, màu, nhóm vật lý. Mở vòng cấu hình → **Trang phục** trên card có preset để đổi trang phục; di chuyển để kiểm tra vật lý tóc và ngực.
 - **Cầm vật phẩm** với model GLB/glTF: kiếm phải cầm lưỡi hướng ra trước, không bị ngửa nằm ngang.
 
 ## Cài đặt
@@ -74,6 +74,10 @@ Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animatio
 Card model là một file PNG: phần ảnh là nhân vật, phía sau gói toàn bộ model (cơ thể, outfit, texture, hình dáng, kích thước, màu, vật lý), giống card Koikatsu. Tạo card bằng [3D Model Renderer Studio](https://github.com/intorbmn/3d-model-renderer-studio): chạy trên trình duyệt, chính thức hỗ trợ nhân vật xuất từ game ILLGAMES (thanh chỉnh cơ thể và mặt, các ô outfit, vật lý). Các model khác (PMX/PMD, VRM, GLB…) không cần card: dùng như MMD Skin, từ thư mục model trong `3d-skin`. Bỏ file `.png` vào `3d-skin/Cards/`. Card được xếp đầu danh sách chọn model và đánh dấu nổi bật bằng nhãn **CARD**; thư mục model thường vẫn dùng như cũ.
 
 Card mang theo hình dáng: các chỉnh sửa bằng thanh trượt (xương được dời, xoay, phóng to/thu nhỏ như trình tạo nhân vật của các game ILLGAMES) và các món bị ẩn được áp vào model khi mod nạp. Outfit nằm trong model của card và dùng chung khung xương với cơ thể, nên đi theo xương và vật lý của cơ thể; model có các phần mang khung xương riêng được ánh xạ về khung xương đầu tiên theo tên xương. Card luôn có vật lý: nhóm tóc, quần áo, cơ thể và tuỳ chỉnh, mod chạy các nhóm này thay cho spring bone có sẵn của model. Card game ILLGAMES (Koikatsu, AI Shoujo, Honey Select 2, Honey Come…) chỉ chứa thông số cho trình tạo nhân vật, không có model 3D, nên mod không đọc được; hãy xuất nhân vật bằng script KKBP của studio.
+
+**Đổi trang phục trong game.** Card nhân vật có thể mang nhiều bộ trang phục dưới dạng preset làm trong studio. Mở vòng cấu hình, chọn **Trang phục** để đổi giữa các preset; lựa chọn được lưu theo từng model (chọn material bằng tay trong Material Control sẽ thay cho preset). Card không có preset sẽ hiện thông báo.
+
+**Vật lý.** Vật lý của card chạy cố định 60 Hz với cùng bộ giải như phần xem trước trong studio: tóc, quần áo đung đưa như spring bone của VRM, ngực và mông (nhóm cơ thể) nảy quanh vị trí nghỉ, mỗi khớp không vượt góc tối đa của nhóm, và vùng va chạm biết tư thế nghỉ, nên tóc nằm sát da đầu không bị đẩy ra và cánh tay đang cử động không kẹp tóc sang phía bên kia.
 
 ### Model GLB/glTF và animation
 

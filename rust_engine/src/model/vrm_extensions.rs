@@ -261,6 +261,30 @@ pub struct SpringBoneSpring {
     pub joints: Vec<SpringBoneJoint>,
     pub collider_groups: Vec<usize>,
     pub center: Option<usize>,
+    pub settings: SpringSettings,
+}
+
+/// How a chain moves.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SpringMode {
+    /// UniVRM's spring bone: the tail keeps its momentum and is pushed back towards the rest
+    /// direction by `stiffness` (hair, clothing, accessories).
+    #[default]
+    Spring,
+    /// A damped spring around the rest pose (bust, hips): `stiffness` sets how fast it bounces,
+    /// `drag` how soon it settles, `gravity` how far it sags (a fraction of the bone length).
+    Jiggle,
+}
+
+/// Per-chain options of the studio's physics groups (VRM springs use the defaults).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct SpringSettings {
+    pub mode: SpringMode,
+    /// The last joint only marks where the chain ends (VRM 1.0 / studio chains); otherwise every
+    /// joint swings and the last gets a short virtual tail (VRM 0.x).
+    pub last_is_tail: bool,
+    /// Furthest a joint may turn away from its rest direction, in radians.
+    pub max_angle: Option<f32>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -823,6 +847,7 @@ fn parse_spring_bones_0x(vrm: &Value, json_root: &gltf_json::Root) -> SpringBone
                     joints,
                     collider_groups: collider_groups.clone(),
                     center,
+                    settings: SpringSettings::default(),
                 });
             }
         }
@@ -935,6 +960,7 @@ fn parse_spring_bones_1_0(others: &Map<String, Value>) -> SpringBoneData {
                     joints,
                     collider_groups,
                     center,
+                    settings: SpringSettings::default(),
                 });
             }
         }
