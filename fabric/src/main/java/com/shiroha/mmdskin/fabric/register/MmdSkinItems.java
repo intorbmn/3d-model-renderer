@@ -1,6 +1,6 @@
 package com.shiroha.mmdskin.fabric.register;
 
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -22,6 +22,6 @@ public final class MmdSkinItems {
     public static void register() {
         MODEL_TAG = Registry.register(BuiltInRegistries.ITEM, MODEL_TAG_KEY,
                 new Item(new Item.Properties().setId(MODEL_TAG_KEY).stacksTo(1)));
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> entries.accept(MODEL_TAG));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(output -> output.accept(MODEL_TAG));
     }
 }
