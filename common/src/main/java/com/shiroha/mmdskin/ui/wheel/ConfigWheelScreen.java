@@ -35,6 +35,16 @@ public class ConfigWheelScreen extends AbstractWheelScreen {
         modSettingsScreenFactory = factory;
     }
 
+    /** The full settings screen, or null (with a chat message) before it is registered. */
+    public static Screen createModSettingsScreen() {
+        Screen screen = modSettingsScreenFactory != null ? modSettingsScreenFactory.get() : null;
+        if (screen == null) {
+            Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(
+                    Component.translatable("message.mmdskin.mod_settings.not_initialized"));
+        }
+        return screen;
+    }
+
     private void initConfigSlots() {
         configSlots.add(new ConfigSlot("model",
                 Component.translatable("gui.mmdskin.config.model_switch").getString(),

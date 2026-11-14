@@ -29,6 +29,9 @@ public interface IRenderConfig {
 
     default int getAnimationLodFarUpdateInterval() { return 4; }
 
+    /** Distance (blocks) beyond which models are drawn simplified; 0 turns it off. */
+    default float getMeshLodDistance() { return 16.0f; }
+
     default boolean isFirstPersonModelEnabled() { return false; }
 
     default float getFirstPersonCameraForwardOffset() { return 0.0f; }

@@ -84,6 +84,14 @@ public final class SubmitModelInstance extends BaseModelInstance {
     private boolean[] drawnSubMeshes;
     private int[] vertexRanges = new int[0];
     private int vertexRangeCount;
+    /** Bumped whenever the drawn sub-meshes change; a simplified mesh is only valid for one version. */
+    private int drawnVersion;
+
+    // Simplified mesh for far away (built once per drawn set, off the render thread).
+    private static final float LOD_RATIO = 0.25f;
+    private volatile com.shiroha.mmdskin.render.lod.MeshSimplifier.Result lod;
+    private volatile int lodVersion = -1;
+    private volatile boolean lodBuilding;
 
     // Geometry transformed into the pose of the most recent submit. Every material node of one submit
     // shares the pose, so the transform is done once and reused by the remaining nodes.
@@ -284,6 +292,16 @@ public final class SubmitModelInstance extends BaseModelInstance {
         int outlineColor = outline ? packOutlineColor() : 0;
         RenderType outlineType = outline && outlineWidth > 0.0f ? outlineRenderType() : null;
 
+        // Far away: about a quarter of the triangles (never for the camera's own model).
+        float lodDistance = ConfigManager.getMeshLodDistance();
+        com.shiroha.mmdskin.render.lod.MeshSimplifier.Result far = null;
+        if (lodDistance > 0.0f && entityIn != null
+                && com.shiroha.mmdskin.render.policy.RenderPriorityService.get().distanceSqToCamera(entityIn, false)
+                > (double) lodDistance * lodDistance) {
+            far = farMesh();
+        }
+        final int[] drawIndices = far != null ? far.indices() : indices;
+
         int translucentOrder = 0;
         for (int i = 0; i < subMeshCount; i++) {
             int base = i * SUB_MESH_STRIDE;
@@ -306,18 +324,21 @@ public final class SubmitModelInstance extends BaseModelInstance {
             Material material = materials[materialId];
             boolean translucent = material.translucentTexture || alpha < OPAQUE_ALPHA;
             int color = packColor(material, alpha);
-            int first = beginIndex;
-            int count = indexCount - indexCount % 3;
+            int first = far != null ? far.begins()[i] : beginIndex;
+            int count = far != null ? far.counts()[i] : indexCount - indexCount % 3;
+            if (count < 3) {
+                continue;
+            }
 
             // Blended materials are layered (eyes over face, lashes over eyes): keep the model's
             // material order for them. Opaque materials are depth-tested and can share one order.
             var target = translucent ? collector.order(++translucentOrder) : collector;
             target.submitCustomGeometry(poseStack, material.renderType(translucent),
-                    (pose, consumer) -> emit(pose, consumer, first, count, color, packedLight));
+                    (pose, consumer) -> emit(pose, consumer, drawIndices, first, count, color, packedLight));
 
             if (outlineType != null && !translucent) {
                 collector.submitCustomGeometry(poseStack, outlineType,
-                        (pose, consumer) -> emitOutline(pose, consumer, first, count, outlineColor, outlineWidth, packedLight));
+                        (pose, consumer) -> emitOutline(pose, consumer, drawIndices, first, count, outlineColor, outlineWidth, packedLight));
             }
         }
     }
@@ -416,6 +437,44 @@ public final class SubmitModelInstance extends BaseModelInstance {
         // Vertices that were hidden until now have never been copied or transformed.
         copiedRevision = Long.MIN_VALUE;
         transformedValid = false;
+        drawnVersion++;
+    }
+
+    /**
+     * The simplified mesh for the sub-meshes drawn now, or null while it is being built (the full mesh
+     * is drawn meanwhile). Built from the current pose on a worker thread, once per drawn set.
+     */
+    private com.shiroha.mmdskin.render.lod.MeshSimplifier.Result farMesh() {
+        int version = drawnVersion;
+        if (lodVersion == version) {
+            return lod;
+        }
+        if (lodBuilding) {
+            return null;
+        }
+        int[] begins = new int[subMeshCount];
+        int[] counts = new int[subMeshCount];
+        for (int i = 0; i < subMeshCount; i++) {
+            int base = i * SUB_MESH_STRIDE;
+            begins[i] = drawnSubMeshes[i] ? subMeshData.getInt(base + 4) : -1;
+            counts[i] = subMeshData.getInt(base + 8);
+        }
+        float[] pose = positions.clone();
+        int[] triangles = indices;
+        lodBuilding = true;
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                lod = com.shiroha.mmdskin.render.lod.MeshSimplifier.simplify(triangles, pose, begins, counts, LOD_RATIO);
+                lodVersion = version;
+            } catch (RuntimeException e) {
+                logger.warn("Could not simplify '{}' for distance rendering", getModelName(), e);
+                lodVersion = version;
+                lod = null;
+            } finally {
+                lodBuilding = false;
+            }
+        });
+        return null;
     }
 
     /** Vertex gaps shorter than this are copied along rather than splitting a range. */
@@ -449,7 +508,7 @@ public final class SubmitModelInstance extends BaseModelInstance {
     }
 
     /** Runs when Minecraft builds the vertex buffer for one material node. */
-    private void emit(PoseStack.Pose pose, VertexConsumer consumer, int first, int count, int color, int packedLight) {
+    private void emit(PoseStack.Pose pose, VertexConsumer consumer, int[] idx, int first, int count, int color, int packedLight) {
         if (disposed || positions == null) {
             return;
         }
@@ -458,7 +517,6 @@ public final class SubmitModelInstance extends BaseModelInstance {
         float[] tp = transformedPositions;
         float[] tn = transformedNormals;
         float[] uv = uvs;
-        int[] idx = indices;
         int overlay = OverlayTexture.NO_OVERLAY;
         int end = first + count;
         for (int i = first; i < end; i += 3) {
@@ -477,7 +535,7 @@ public final class SubmitModelInstance extends BaseModelInstance {
      * back-face-culling render type, so only the rim behind the model remains visible. The width
      * follows the original outline shader: slightly wider with distance, fading out beyond 25 blocks.
      */
-    private void emitOutline(PoseStack.Pose pose, VertexConsumer consumer, int first, int count,
+    private void emitOutline(PoseStack.Pose pose, VertexConsumer consumer, int[] idx, int first, int count,
                              int color, float width, int packedLight) {
         if (disposed || positions == null) {
             return;
@@ -495,7 +553,6 @@ public final class SubmitModelInstance extends BaseModelInstance {
 
         float[] tp = transformedPositions;
         float[] tn = transformedNormals;
-        int[] idx = indices;
         int overlay = OverlayTexture.NO_OVERLAY;
         int end = first + count;
         for (int i = first; i < end; i += 3) {

@@ -60,8 +60,8 @@ public class MorphWheelScreen extends AbstractWheelScreen {
     @Override
     protected void init() {
         super.init();
-        initWheelLayout();
         initMorphSlots();
+        initWheelLayout();
 
         this.addRenderableWidget(createWheelIconButton(Component.literal("⚙"), btn -> {
             this.minecraft.gui.setScreen(new MorphWheelConfigScreen(this));

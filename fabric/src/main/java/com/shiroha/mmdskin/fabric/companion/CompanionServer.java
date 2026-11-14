@@ -56,6 +56,7 @@ public final class CompanionServer {
     private static final double RANGE_SQ = 12.0 * 12.0;
     private static final double HEAR_RANGE = 24.0;
     private static final int MAX_LINES = 8;
+    private static final int MAX_ANIMS = 24;
     private static final int MAX_TEXT = 200;
 
     private static final Map<UUID, Entry> ENTRIES = new ConcurrentHashMap<>();
@@ -64,6 +65,8 @@ public final class CompanionServer {
     private static final class Entry {
         String model;
         List<String> lines = new ArrayList<>();
+        /** The animations players can pick when they interact with it (empty: their own favourites). */
+        List<String> anims = new ArrayList<>();
         int next;
     }
 
@@ -123,7 +126,8 @@ public final class CompanionServer {
     /** True for the requests this class handles. */
     public static boolean handles(int opCode) {
         return opCode == NetworkOpCode.COMPANION_SET || opCode == NetworkOpCode.COMPANION_LINES
-                || opCode == NetworkOpCode.COMPANION_TALK || opCode == NetworkOpCode.COMPANION_ACTION;
+                || opCode == NetworkOpCode.COMPANION_TALK || opCode == NetworkOpCode.COMPANION_ACTION
+                || opCode == NetworkOpCode.COMPANION_ANIMS;
     }
 
     /** A request from a player (network thread): checked and run on the server thread. */
@@ -171,6 +175,22 @@ public final class CompanionServer {
                 }
                 entry.lines = lines;
                 entry.next = 0;
+                save();
+                broadcast(server, NetworkOpCode.COMPANION_SYNC, id, syncJson(entry));
+            }
+            case NetworkOpCode.COMPANION_ANIMS -> {
+                Entry entry = ENTRIES.get(id);
+                if (entry == null) {
+                    return;
+                }
+                List<String> anims = new ArrayList<>();
+                for (String anim : data.split("\n")) {
+                    String clean = clip(anim.trim());
+                    if (!clean.isEmpty() && !anims.contains(clean) && anims.size() < MAX_ANIMS) {
+                        anims.add(clean);
+                    }
+                }
+                entry.anims = anims;
                 save();
                 broadcast(server, NetworkOpCode.COMPANION_SYNC, id, syncJson(entry));
             }
@@ -229,6 +249,9 @@ public final class CompanionServer {
         JsonArray lines = new JsonArray();
         entry.lines.forEach(lines::add);
         root.add("lines", lines);
+        JsonArray anims = new JsonArray();
+        entry.anims.forEach(anims::add);
+        root.add("anims", anims);
         return root.toString();
     }
 
@@ -265,6 +288,9 @@ public final class CompanionServer {
                 if (value.has("lines")) {
                     value.getAsJsonArray("lines").forEach(line -> entry.lines.add(line.getAsString()));
                 }
+                if (value.has("anims")) {
+                    value.getAsJsonArray("anims").forEach(anim -> entry.anims.add(anim.getAsString()));
+                }
                 ENTRIES.put(UUID.fromString(item.getKey()), entry);
             }
             LOGGER.info("Loaded {} companion(s)", ENTRIES.size());
@@ -285,6 +311,9 @@ public final class CompanionServer {
             JsonArray lines = new JsonArray();
             entry.lines.forEach(lines::add);
             value.add("lines", lines);
+            JsonArray anims = new JsonArray();
+            entry.anims.forEach(anims::add);
+            value.add("anims", anims);
             root.add(id.toString(), value);
         });
         try {

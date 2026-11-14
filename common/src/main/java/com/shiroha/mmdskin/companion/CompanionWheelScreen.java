@@ -2,11 +2,8 @@ package com.shiroha.mmdskin.companion;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.shiroha.mmdskin.asset.catalog.ModelCatalogEntry;
-import com.shiroha.mmdskin.compat.maid.service.MaidActionService;
 import com.shiroha.mmdskin.compat.maid.service.MaidModelSelectionService;
-import com.shiroha.mmdskin.compat.maid.ui.MaidActionWheelScreen;
 import com.shiroha.mmdskin.compat.maid.ui.MaidModelSelectorScreen;
-import com.shiroha.mmdskin.ui.config.ActionWheelConfig;
 import com.shiroha.mmdskin.config.UIConstants;
 import com.shiroha.mmdskin.ui.network.NetworkOpCode;
 import com.shiroha.mmdskin.ui.wheel.AbstractWheelScreen;
@@ -23,7 +20,7 @@ import net.minecraft.world.entity.Entity;
  * The wheels of a mob given a model with the model tag ("companion"):
  * <ul>
  *   <li>with the tag in hand: Model (pick or remove its model) and Lines (what it says);</li>
- *   <li>with an empty hand: Talk and Animations.</li>
+ *   <li>with an empty hand: Talk, the mob's own animations and an entry to change them.</li>
  * </ul>
  */
 public class CompanionWheelScreen extends AbstractWheelScreen {
@@ -50,7 +47,13 @@ public class CompanionWheelScreen extends AbstractWheelScreen {
         } else {
             slots.add(new Slot(Component.translatable("gui.mmdskin.companion.talk").getString(),
                     () -> CompanionHooks.sender.send(NetworkOpCode.COMPANION_TALK, entityId, "")));
-            slots.add(new Slot(Component.translatable("gui.mmdskin.companion.animations").getString(), this::openAnimations));
+            // The mob's own interaction animations, one click each (the player's favourites when it has none).
+            for (ActionOption action : CompanionAnimationsScreen.offered(entityUUID)) {
+                slots.add(new Slot(action.displayName(),
+                        () -> CompanionHooks.sender.send(NetworkOpCode.COMPANION_ACTION, entityId, action.animId())));
+            }
+            slots.add(new Slot(Component.translatable("gui.mmdskin.companion.edit_animations").getString(),
+                    () -> Minecraft.getInstance().gui.setScreen(new CompanionAnimationsScreen(entityUUID, entityId, entityName))));
         }
     }
 
@@ -133,24 +136,6 @@ public class CompanionWheelScreen extends AbstractWheelScreen {
         };
         Minecraft.getInstance().gui.setScreen(new MaidModelSelectorScreen(entityUUID, entityId, entityName, service,
                 Component.translatable("gui.mmdskin.companion.model_title", entityName)));
-    }
-
-    private void openAnimations() {
-        MaidActionService service = new MaidActionService() {
-            @Override
-            public List<ActionOption> loadActions() {
-                return ActionWheelConfig.getInstance().getDisplayedActions().stream()
-                        .map(entry -> new ActionOption(entry.name, entry.animId))
-                        .toList();
-            }
-
-            @Override
-            public void selectAction(UUID uuid, int id, String animId) {
-                CompanionHooks.sender.send(NetworkOpCode.COMPANION_ACTION, id, animId);
-            }
-        };
-        Minecraft.getInstance().gui.setScreen(new MaidActionWheelScreen(entityUUID, entityId, entityName, service,
-                Component.translatable("gui.mmdskin.companion.animations")));
     }
 
     private void openLines() {

@@ -24,6 +24,8 @@ public abstract class AbstractMmdSkinConfig implements ConfigManager.IConfigProv
     @Override public float getAnimationLodFarDistance() { return data.animationLodFarDistance; }
     @Override public int getAnimationLodMediumUpdateInterval() { return data.animationLodMediumUpdateInterval; }
     @Override public int getAnimationLodFarUpdateInterval() { return data.animationLodFarUpdateInterval; }
+    @Override public float getMeshLodDistance() { return data.meshLodDistance; }
+    @Override public ConfigData editableData() { return data; }
 
     @Override public boolean isToonRenderingEnabled() { return data.toonRenderingEnabled; }
     @Override public int getToonLevels() { return data.toonLevels; }

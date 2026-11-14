@@ -55,6 +55,22 @@ public class ConfigManager {
         return provider != null ? provider.getAnimationLodMediumDistance() : 24.0f;
     }
 
+    public static float getMeshLodDistance() {
+        return provider != null ? provider.getMeshLodDistance() : 16.0f;
+    }
+
+    /** The settings to change in place (the in-game menu), or null before the config is loaded. */
+    public static ConfigData editableData() {
+        return provider != null ? provider.editableData() : null;
+    }
+
+    /** Writes the settings changed through {@link #editableData()} to disk. */
+    public static void persist() {
+        if (provider != null) {
+            provider.persist();
+        }
+    }
+
     public static float getAnimationLodFarDistance() {
         return provider != null ? provider.getAnimationLodFarDistance() : 48.0f;
     }
@@ -205,5 +221,12 @@ public class ConfigManager {
 
     public interface IConfigProvider extends IRenderConfig, IToonConfig, IPhysicsConfig, IVRConfig {
         String getMobModelReplacement(String entityTypeId);
+
+        default ConfigData editableData() {
+            return null;
+        }
+
+        default void persist() {
+        }
     }
 }

@@ -83,6 +83,23 @@ public class OutfitScreen extends Screen {
     }
 
     private void wear(OutfitPresets.Preset preset) {
+        wear(context, preset);
+        Minecraft.getInstance().gui.setScreen(new OutfitScreen(context, presets));
+    }
+
+    /** The outfit presets of the model in {@code context}, or null when it has none. */
+    public static OutfitPresets presetsFor(MaterialScreenContext context) {
+        ModelCatalogEntry entry = context == null ? null : ModelCatalogEntry.findByFolderName(context.configModelName());
+        return entry == null ? null : OutfitPresets.load(Path.of(entry.getFolderPath())).orElse(null);
+    }
+
+    /** The name of the outfit the model in {@code context} wears. */
+    public static String currentOutfit(MaterialScreenContext context, OutfitPresets presets) {
+        return presets.find(ModelConfigManager.getConfig(context.configModelName()).outfit).name();
+    }
+
+    /** Puts on an outfit preset and remembers it for the model. */
+    public static void wear(MaterialScreenContext context, OutfitPresets.Preset preset) {
         List<MaterialEntryState> materials = service().loadMaterials(context);
         // Everything on, then off what this outfit does not wear (same path as the material screen).
         service().setAllVisible(context, materials, true);
@@ -97,7 +114,6 @@ public class OutfitScreen extends Screen {
         config.hiddenMaterials = hidden;
         config.outfit = preset.name();
         ModelConfigManager.saveConfig(context.configModelName(), config);
-        Minecraft.getInstance().gui.setScreen(new OutfitScreen(context, presets));
     }
 
     @Override

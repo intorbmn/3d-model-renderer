@@ -14,6 +14,7 @@ public final class CompanionState {
 
     private static final Map<UUID, String> MODELS = new ConcurrentHashMap<>();
     private static final Map<UUID, java.util.List<String>> LINES = new ConcurrentHashMap<>();
+    private static final Map<UUID, java.util.List<String>> ANIMS = new ConcurrentHashMap<>();
     private static final Map<UUID, Action> ACTIONS = new ConcurrentHashMap<>();
 
     /** An animation a companion plays: started once per loaded model. */
@@ -38,6 +39,7 @@ public final class CompanionState {
         if (model == null || model.isBlank()) {
             MODELS.remove(entity);
             LINES.remove(entity);
+            ANIMS.remove(entity);
             ACTIONS.remove(entity);
         } else {
             MODELS.put(entity, model);
@@ -58,8 +60,13 @@ public final class CompanionState {
             if (root.has("lines") && root.get("lines").isJsonArray()) {
                 root.getAsJsonArray("lines").forEach(line -> lines.add(line.getAsString()));
             }
+            java.util.List<String> anims = new java.util.ArrayList<>();
+            if (root.has("anims") && root.get("anims").isJsonArray()) {
+                root.getAsJsonArray("anims").forEach(anim -> anims.add(anim.getAsString()));
+            }
             if (model != null && !model.isBlank()) {
                 LINES.put(entity, java.util.List.copyOf(lines));
+                ANIMS.put(entity, java.util.List.copyOf(anims));
             }
         } catch (RuntimeException e) {
             setModel(entity, null);
@@ -69,6 +76,11 @@ public final class CompanionState {
     /** The companion's talk lines (empty: it says the default line). */
     public static java.util.List<String> lines(UUID entity) {
         return entity == null ? java.util.List.of() : LINES.getOrDefault(entity, java.util.List.of());
+    }
+
+    /** The animations the companion offers (empty: the player's own favourites are offered). */
+    public static java.util.List<String> anims(UUID entity) {
+        return entity == null ? java.util.List.of() : ANIMS.getOrDefault(entity, java.util.List.of());
     }
 
     /** The companion's model, or null when the mob has none. */
@@ -105,6 +117,7 @@ public final class CompanionState {
     public static void clear() {
         MODELS.clear();
         LINES.clear();
+        ANIMS.clear();
         ACTIONS.clear();
     }
 }

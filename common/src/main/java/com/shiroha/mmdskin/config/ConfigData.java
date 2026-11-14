@@ -35,6 +35,8 @@ public class ConfigData {
     public float animationLodFarDistance = 48.0f;
     public int animationLodMediumUpdateInterval = 2;
     public int animationLodFarUpdateInterval = 4;
+    /** Beyond this many blocks a model is drawn with about a quarter of its triangles (0 = never). */
+    public float meshLodDistance = 16.0f;
 
     public boolean toonRenderingEnabled = false;
     public int toonLevels = 4;
@@ -127,6 +129,7 @@ public class ConfigData {
         animationLodFarDistance = Math.max(animationLodMediumDistance, animationLodFarDistance);
         animationLodMediumUpdateInterval = Math.max(1, animationLodMediumUpdateInterval);
         animationLodFarUpdateInterval = Math.max(animationLodMediumUpdateInterval, animationLodFarUpdateInterval);
+        meshLodDistance = Math.max(0.0f, meshLodDistance);
         toonLevels = Math.max(2, Math.min(5, toonLevels));
         toonRimPower = clamp(toonRimPower, 0.1f, 10.0f);
         toonRimIntensity = clamp(toonRimIntensity, 0.0f, 1.0f);

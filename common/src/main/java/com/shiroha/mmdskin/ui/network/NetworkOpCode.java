@@ -24,6 +24,8 @@ public final class NetworkOpCode {
     // an animation to play.
     public static final int COMPANION_SYNC = 24;
     public static final int COMPANION_PLAY = 25;
+    /** Client → server: the animations a companion offers when players interact with it ("\n"-separated ids). */
+    public static final int COMPANION_ANIMS = 26;
 
 
     public static boolean isStringPayload(int opCode) {
@@ -36,7 +38,7 @@ public final class NetworkOpCode {
     public static boolean isEntityStringPayload(int opCode) {
         return opCode == MAID_MODEL || opCode == MAID_ACTION
                 || opCode == COMPANION_SET || opCode == COMPANION_LINES
-                || opCode == COMPANION_TALK || opCode == COMPANION_ACTION;
+                || opCode == COMPANION_TALK || opCode == COMPANION_ACTION || opCode == COMPANION_ANIMS;
     }
 
     private NetworkOpCode() {}

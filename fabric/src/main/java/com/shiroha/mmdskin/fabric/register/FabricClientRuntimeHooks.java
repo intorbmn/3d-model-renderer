@@ -13,7 +13,7 @@ import com.shiroha.mmdskin.stage.client.camera.MMDCameraController;
 import com.shiroha.mmdskin.ui.QuickModelSwitcher;
 import com.shiroha.mmdskin.ui.config.ModelSelectorConfig;
 import com.shiroha.mmdskin.ui.network.NetworkOpCode;
-import com.shiroha.mmdskin.ui.wheel.ConfigWheelScreen;
+import com.shiroha.mmdskin.ui.menu.MainMenuScreen;
 import com.shiroha.mmdskin.ui.wheel.MaidConfigWheelScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -74,10 +74,11 @@ final class FabricClientRuntimeHooks {
             }
         }
 
-        if (minecraft.gui.screen() == null || minecraft.gui.screen() instanceof ConfigWheelScreen) {
+        // The menu key (Alt) opens the main menu; pressed again in the menu, it closes it.
+        if (minecraft.gui.screen() == null) {
             boolean keyDown = keyConfigWheel.isDown();
             if (keyDown && !configWheelKeyWasDown) {
-                minecraft.gui.setScreen(new ConfigWheelScreen(keyConfigWheel));
+                minecraft.gui.setScreen(new MainMenuScreen(keyConfigWheel));
             }
             configWheelKeyWasDown = keyDown;
         } else {
