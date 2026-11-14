@@ -24,6 +24,8 @@ const STEP: f32 = 1.0 / 60.0;
 const MAX_STEPS: u32 = 4;
 /// A tail further than this many bone lengths from its bone is reset to the rest pose.
 const RESET_DISTANCE: f32 = 4.0;
+/// How many times a tail is checked against all its colliders, the order reversed each time.
+const COLLISION_PASSES: usize = 4;
 
 #[derive(Clone, Copy, Debug)]
 enum TailSpace {
@@ -251,16 +253,28 @@ impl SpringBoneRuntime {
                     next_tail = limit_angle(bone_position, next_tail, rest_dir, joint.rest_length, max_angle);
                 }
 
-                for (slot, &collider_index) in chain.collider_indices.iter().enumerate() {
-                    let limit = joint.collider_limits.get(slot).copied().unwrap_or(0.0);
-                    let Some(collider) = self.colliders.get(collider_index) else {
-                        continue;
-                    };
-                    if limit <= 0.0 {
-                        continue;
+                // A tail between two colliders (a skirt between the legs) is pushed from one into the
+                // other: go over them a few times, the other way round each time, so no collider
+                // (no leg) wins just by coming last.
+                let count = chain.collider_indices.len();
+                for pass in 0..COLLISION_PASSES {
+                    let mut pushed = false;
+                    for n in 0..count {
+                        let slot = if pass % 2 == 0 { n } else { count - 1 - n };
+                        let limit = joint.collider_limits.get(slot).copied().unwrap_or(0.0);
+                        let Some(collider) = self.colliders.get(chain.collider_indices[slot]) else {
+                            continue;
+                        };
+                        if limit <= 0.0 {
+                            continue;
+                        }
+                        if let Some(pushed_tail) = collide_tail(bones, collider, limit, next_tail, current_tail) {
+                            next_tail = keep_length(bone_position, pushed_tail, rest_dir, joint.rest_length);
+                            pushed = true;
+                        }
                     }
-                    if let Some(pushed_tail) = collide_tail(bones, collider, limit, next_tail, current_tail) {
-                        next_tail = keep_length(bone_position, pushed_tail, rest_dir, joint.rest_length);
+                    if !pushed {
+                        break;
                     }
                 }
 
