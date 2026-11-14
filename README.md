@@ -36,7 +36,7 @@ Things changed since the last test build, worth checking in game:
 
 - **Physics follows the player.** Hair, skirts and bust should lag when you start or stop moving, trail back while walking or sprinting, swing out when you turn, and not fly off when you teleport. Strength: *Inertia Strength* in the mod settings (50 = realistic, the default).
 - **Spring-bone models (VRM, and GLB/glTF cards)**: colliders now have the right size, so hair should stay outside the head and body.
-- **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups. Open the config wheel → **Outfit** on a card with outfit presets and switch outfits; move around to check hair and bust physics.
+- **Cards**: put a card from the studio into `3d-skin/Cards/`, open the model selector (it is listed first with a pink **CARD** badge), pick it, and check its size, colour tints and physics groups. Open the menu (left Alt) → **Outfit** on a card with outfit presets and switch outfits; move around to check hair and bust physics.
 - **Feet on the ground**: GLB/glTF models whose feet sit below their origin (ILLGAMES characters) are lifted so the soles rest on the ground.
 - **Model Tag**: craft one (name tag + amethyst shard, or from the Tools tab), right-click a mob with it, pick a model and write its lines; then right-click it with an empty hand to talk to it or make it play an animation. Other mobs of the same kind keep their look.
 - **Held items** on GLB/glTF models: a sword should be held edge-forward, not lying flat.
@@ -67,7 +67,7 @@ Each model lives in its own folder under `.minecraft/3d-skin/EntityPlayer/`:
 └── CustomMorph/             your own expressions (.vpd)
 ```
 
-In game, hold **left Alt** to open the wheel menu, choose **Model Switch**, then pick the model folder.
+In game, press **left Alt** to open the menu, open the **Model** tab, then pick the model folder.
 
 The original documentation (in Chinese) covers the folder layout, animation load order and per-model settings in detail: [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Most of it still applies, except the parts about Forge and Minecraft 1.20.1.
 
@@ -77,7 +77,7 @@ A model card is a single PNG: the picture is the character, and the whole model 
 
 Cards carry their shape: the slider edits (bones moved, turned and scaled like the character makers of ILLGAMES titles) and hidden pieces are baked into the model when the mod loads it. The outfit is part of the card's model and shares the body's skeleton, so it follows the body's bones and physics; models whose pieces have skeletons of their own are mapped onto the first one by bone. Cards always carry physics: hair, clothing, body and custom groups, which the mod runs in place of the model's own spring bones. ILLGAMES game cards (Koikatsu, AI Shoujo, Honey Select 2, Honey Come, ...) hold maker settings, not a 3D model, so the mod cannot load them; export the character with the studio's KKBP script instead.
 
-**Outfits in game.** A character card can carry several outfits as presets made in the studio. Open the config wheel and pick **Outfit** to switch between them; the choice is kept per model (picking materials by hand in Material Control replaces it). Cards without presets show a message instead.
+**Outfits in game.** A character card can carry several outfits as presets made in the studio. Open the menu (left Alt) and the **Outfit** tab to switch between them; the choice is kept per model (picking materials by hand in Material Control replaces it). Cards without presets show a message instead.
 
 **Physics.** Card physics run at a fixed 60 Hz with the same solver as the studio's preview: hair and clothing swing like VRM spring bones, bust and hips (body groups) bounce around their rest pose, every joint stays within its group's maximum angle, and colliders know the rest pose, so hair resting on the scalp is not pushed away and a moving arm cannot trap hair on its far side.
 
@@ -107,16 +107,16 @@ The script exports the armature and its meshes to GLB and rebuilds the materials
 
 The **Model Tag** item (crafted from a name tag and an amethyst shard, or found in the Tools & Utilities creative tab) gives a single mob its own model, instead of every mob of its kind (the mod settings' mob replacement):
 
-- **Right-click a mob with the tag** to open its wheel: **Model** picks the model (the default entry removes it), **Lines** sets up to eight lines it says in turn.
-- **Right-click it with an empty hand** to interact: **Talk** (it stops, looks at you, says its next line in chat to players nearby and plays `talk.vmd`) or **Animations** (one of your action wheel's animations, played for about six seconds or until it walks off). Sneak to use the mob as usual (trading with a villager, for example).
+- **Right-click a mob with the tag** to open its menu: **Model** picks the model (the default entry removes it), **Lines** sets up to eight lines it says in turn.
+- **Right-click it with an empty hand** to interact: **Talk** (it stops, looks at you, says its next line in chat to players nearby and plays `talk.vmd`), or one of the mob's animations (played for about six seconds or until it walks off). **Add or remove animations…** picks which animations this mob offers, from every animation you have; a mob without its own list offers your favourites. Sneak to use the mob as usual (trading with a villager, for example).
 
-The server keeps each mob's model and lines with the world (`data/mmdskin_companions.json`) and sends them to every player, so everyone sees the same; the model itself has to be installed on each player's game. A mob's entry goes when it dies.
+The server keeps each mob's model, lines and animations with the world (`data/mmdskin_companions.json`) and sends them to every player, so everyone sees the same; the model itself has to be installed on each player's game. A mob's entry goes when it dies.
 
 ## Key bindings
 
 | Key | Action |
 |---|---|
-| Hold left `Alt` | Main wheel: switch model, actions, expressions, materials, scene, stage, settings |
+| Left `Alt` | Main menu (press again or Esc to close): Config, Model, Animation, Expression, Outfit, Material (grouped: face, body, hair, clothing, accessories), Scene, Stage. Tab switches tabs, the mouse wheel scrolls |
 
 Keys can be changed in the game's *Controls* screen, under **3D Model Renderer**.
 

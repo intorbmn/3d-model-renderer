@@ -955,9 +955,12 @@ impl MmdModel {
     /// 更新 Morph 动画
     pub fn update_morph_animation(&mut self) {
         // 先将 update_positions 重置为原始顶点位置（因为 apply_morphs 是累加操作）
-        for (i, vertex) in self.vertices.iter().enumerate() {
-            if i < self.update_positions.len() {
-                self.update_positions[i] = vertex.position;
+        // (only the vertices that are skinned: the others belong to hidden materials)
+        self.refresh_skin_mask();
+        let mask = &self.skin_mask;
+        for (i, (out, vertex)) in self.update_positions.iter_mut().zip(&self.vertices).enumerate() {
+            if mask.is_empty() || mask[i] {
+                *out = vertex.position;
             }
         }
         // 应用所有 Morph 变形（顶点/骨骼/材质/UV/Group）
@@ -1040,18 +1043,21 @@ impl MmdModel {
         if self.update_normals_raw.len() != raw_len {
             self.update_normals_raw.resize(raw_len, 0.0);
         }
-        if self.update_uvs_raw.len() != self.update_uvs.len() * 2 {
+        let uvs_resized = self.update_uvs_raw.len() != self.update_uvs.len() * 2;
+        if uvs_resized {
             self.update_uvs_raw.resize(self.update_uvs.len() * 2, 0.0);
         }
 
-        // UV 拷贝（并行）
-        self.update_uvs_raw
-            .par_chunks_mut(2)
-            .zip(self.update_uvs.par_iter())
-            .for_each(|(chunk, uv)| {
-                chunk[0] = uv.x;
-                chunk[1] = uv.y;
-            });
+        // UVs only change with UV morphs: copied once otherwise.
+        if uvs_resized || self.uv_morph_count > 0 {
+            self.update_uvs_raw
+                .par_chunks_mut(2)
+                .zip(self.update_uvs.par_iter())
+                .for_each(|(chunk, uv)| {
+                    chunk[0] = uv.x;
+                    chunk[1] = uv.y;
+                });
+        }
 
         // 并行蒙皮计算
         let vertices = &self.vertices;

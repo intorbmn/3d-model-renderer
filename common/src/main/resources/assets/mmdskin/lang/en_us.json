@@ -392,5 +392,7 @@
   "gui.mmdskin.menu.stage.hint": "Dance with other players on a stage.",
   "gui.mmdskin.companion.edit_animations": "Add or remove animations…",
   "gui.mmdskin.companion.edit_title": "Animations of %s",
-  "gui.mmdskin.companion.edit_hint": "%s picked"
+  "gui.mmdskin.companion.edit_hint": "%s picked",
+  "gui.mmdskin.mod_settings.mesh_lod_distance": "Simplified Model Distance",
+  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "Beyond this many blocks, models are drawn with about a quarter of their triangles. 0 turns it off."
 }

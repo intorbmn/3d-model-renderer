@@ -67,7 +67,7 @@ Mỗi model nằm trong một thư mục riêng dưới `.minecraft/3d-skin/Enti
 └── CustomMorph/             biểu cảm của bạn (.vpd)
 ```
 
-Trong game, giữ **Alt trái** để mở vòng menu, chọn **Model Switch** rồi chọn thư mục model.
+Trong game, bấm **Alt trái** để mở menu, vào tab **Model** rồi chọn thư mục model.
 
 Hướng dẫn chi tiết về cấu trúc thư mục, thứ tự nạp animation và cấu hình theo từng model nằm trong tài liệu gốc (tiếng Trung): [docs/README.mmdskin.zh.md](docs/README.mmdskin.zh.md). Phần lớn vẫn đúng với bản này, trừ các mục về Forge và Minecraft 1.20.1.
 
@@ -77,7 +77,7 @@ Card model là một file PNG: phần ảnh là nhân vật, phía sau gói toà
 
 Card mang theo hình dáng: các chỉnh sửa bằng thanh trượt (xương được dời, xoay, phóng to/thu nhỏ như trình tạo nhân vật của các game ILLGAMES) và các món bị ẩn được áp vào model khi mod nạp. Outfit nằm trong model của card và dùng chung khung xương với cơ thể, nên đi theo xương và vật lý của cơ thể; model có các phần mang khung xương riêng được ánh xạ về khung xương đầu tiên theo tên xương. Card luôn có vật lý: nhóm tóc, quần áo, cơ thể và tuỳ chỉnh, mod chạy các nhóm này thay cho spring bone có sẵn của model. Card game ILLGAMES (Koikatsu, AI Shoujo, Honey Select 2, Honey Come…) chỉ chứa thông số cho trình tạo nhân vật, không có model 3D, nên mod không đọc được; hãy xuất nhân vật bằng script KKBP của studio.
 
-**Đổi trang phục trong game.** Card nhân vật có thể mang nhiều bộ trang phục dưới dạng preset làm trong studio. Mở vòng cấu hình, chọn **Trang phục** để đổi giữa các preset; lựa chọn được lưu theo từng model (chọn material bằng tay trong Material Control sẽ thay cho preset). Card không có preset sẽ hiện thông báo.
+**Đổi trang phục trong game.** Card nhân vật có thể mang nhiều bộ trang phục dưới dạng preset làm trong studio. Mở menu (Alt trái), vào tab **Outfit** để đổi giữa các preset; lựa chọn được lưu theo từng model (chọn material bằng tay trong Material Control sẽ thay cho preset). Card không có preset sẽ hiện thông báo.
 
 **Vật lý.** Vật lý của card chạy cố định 60 Hz với cùng bộ giải như phần xem trước trong studio: tóc, quần áo đung đưa như spring bone của VRM, ngực và mông (nhóm cơ thể) nảy quanh vị trí nghỉ, mỗi khớp không vượt góc tối đa của nhóm, và vùng va chạm biết tư thế nghỉ, nên tóc nằm sát da đầu không bị đẩy ra và cánh tay đang cử động không kẹp tóc sang phía bên kia.
 
@@ -107,16 +107,16 @@ Script xuất armature cùng các lưới ra GLB và dựng lại material về 
 
 Vật phẩm **Thẻ model** (chế từ name tag và mảnh thạch anh tím, hoặc lấy trong tab sáng tạo Công cụ & Tiện ích) gán model cho riêng một con mob, thay vì cho cả loài (tính năng thay model mob trong cài đặt):
 
-- **Cầm thẻ, nhấp phải vào mob** để mở vòng: **Model** chọn model (mục mặc định là bỏ model), **Câu thoại** đặt tối đa tám câu mob sẽ nói lần lượt.
-- **Tay không, nhấp phải vào mob đó** để tương tác: **Nói chuyện** (mob dừng lại, nhìn bạn, nói câu tiếp theo trong khung chat cho người chơi ở gần và diễn `talk.vmd`) hoặc **Động tác** (một động tác trong vòng động tác của bạn, diễn khoảng sáu giây hoặc đến khi mob đi chỗ khác). Ngồi (sneak) khi nhấp để dùng mob như bình thường (ví dụ giao dịch với dân làng).
+- **Cầm thẻ, nhấp phải vào mob** để mở menu: **Model** chọn model (mục mặc định là bỏ model), **Câu thoại** đặt tối đa tám câu mob sẽ nói lần lượt.
+- **Tay không, nhấp phải vào mob đó** để tương tác: **Nói chuyện** (mob dừng lại, nhìn bạn, nói câu tiếp theo trong khung chat cho người chơi ở gần và diễn `talk.vmd`) hoặc chọn một animation của mob đó (diễn khoảng sáu giây hoặc đến khi mob đi chỗ khác). **Thêm hoặc bớt animation…** chọn những animation mob này có, từ mọi animation bạn có; mob chưa có danh sách riêng sẽ dùng danh sách yêu thích của bạn. Ngồi (sneak) khi nhấp để dùng mob như bình thường (ví dụ giao dịch với dân làng).
 
-Server lưu model và câu thoại của từng con mob cùng thế giới (`data/mmdskin_companions.json`) và gửi cho mọi người chơi, nên ai cũng thấy giống nhau; riêng file model phải có sẵn trong game của mỗi người. Mob chết thì mục của nó bị xoá.
+Server lưu model, câu thoại và danh sách animation của từng con mob cùng thế giới (`data/mmdskin_companions.json`) và gửi cho mọi người chơi, nên ai cũng thấy giống nhau; riêng file model phải có sẵn trong game của mỗi người. Mob chết thì mục của nó bị xoá.
 
 ## Phím tắt
 
 | Phím | Chức năng |
 |---|---|
-| Giữ `Alt` trái | Vòng menu chính: đổi model, chọn động tác, biểu cảm, material, cảnh, sân khấu, cài đặt |
+| `Alt` trái | Menu chính (bấm lại hoặc Esc để đóng): Cài đặt, Model, Animation, Biểu cảm, Outfit, Material (chia nhóm: mặt, cơ thể, tóc, quần áo, phụ kiện), Cảnh, Sân khấu. Tab để chuyển tab, lăn chuột để cuộn |
 
 Có thể đổi phím trong mục *Controls* của game, nhóm **3D Model Renderer**.
 

@@ -381,5 +381,7 @@
   "gui.mmdskin.menu.stage.hint": "ほかのプレイヤーとステージで踊ります。",
   "gui.mmdskin.companion.edit_animations": "モーションを追加・削除…",
   "gui.mmdskin.companion.edit_title": "%s のモーション",
-  "gui.mmdskin.companion.edit_hint": "%s 件選択"
+  "gui.mmdskin.companion.edit_hint": "%s 件選択",
+  "gui.mmdskin.mod_settings.mesh_lod_distance": "簡略モデルの距離",
+  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "この距離（ブロック）より遠いモデルは、三角形を約4分の1にして描画します。0でオフ。"
 }

@@ -26,6 +26,7 @@ public class ModConfigScreen {
 
     static Screen createSettingsScreen(Screen parent) {
         ConfigData data = MmdSkinConfig.getData();
+        String loadedWith = reloadKey(data);
 
         ConfigBuilder builder = ConfigBuilder.create()
             .setParentScreen(parent)
@@ -141,6 +142,17 @@ public class ModConfigScreen {
             .setDefaultValue(10)
             .setTooltip(Component.translatable("gui.mmdskin.mod_settings.max_visible_models.tooltip"))
             .setSaveConsumer(value -> data.maxVisibleModelsPerFrame = value)
+            .build());
+
+        performanceCategory.addEntry(entryBuilder
+            .startIntSlider(
+                Component.translatable("gui.mmdskin.mod_settings.mesh_lod_distance"),
+                Math.round(data.meshLodDistance), 0, 64)
+            .setDefaultValue(16)
+            .setTooltip(Component.translatable("gui.mmdskin.mod_settings.mesh_lod_distance.tooltip"))
+            .setTextGetter(value -> value == 0 ? Component.translatable("gui.mmdskin.menu.off")
+                    : Component.translatable("gui.mmdskin.menu.blocks", value))
+            .setSaveConsumer(value -> data.meshLodDistance = value)
             .build());
 
         ConfigCategory toonCategory = builder.getOrCreateCategory(
@@ -421,18 +433,27 @@ public class ModConfigScreen {
             ));
         }
 
-        builder.setSavingRunnable(() -> saveConfig(data));
+        builder.setSavingRunnable(() -> saveConfig(data, loadedWith));
 
         return builder.build();
     }
 
-    static void saveConfig(ConfigData data) {
+    /** The settings models are loaded with: when none of them changed, saving needs no reload. */
+    private static String reloadKey(ConfigData data) {
+        return data.gpuSkinningEnabled + "|" + data.gpuMorphEnabled + "|" + data.mmdShaderEnabled + "|" + data.maxBones
+                + "|" + data.openGLEnableLighting + "|" + data.modelPoolMaxCount + "|" + data.mobModelReplacements;
+    }
+
+    static void saveConfig(ConfigData data, String loadedWith) {
         cleanupInvalidMobReplacements(data);
         MmdSkinConfig.save();
 
         ClientRenderRuntime.get().renderBackendSettings().setGpuSkinningEnabled(data.gpuSkinningEnabled);
         ClientRenderRuntime.get().renderBackendSettings().setShaderEnabled(data.mmdShaderEnabled);
-        ClientRenderRuntime.get().modelRepository().reloadAll();
+        // Reloading every model takes seconds with big character cards: only when it matters.
+        if (!reloadKey(data).equals(loadedWith)) {
+            ClientRenderRuntime.get().modelRepository().reloadAll();
+        }
         ClientRenderRuntime.get().applyPhysicsConfig(PhysicsConfigSnapshot.from(data));
     }
 
