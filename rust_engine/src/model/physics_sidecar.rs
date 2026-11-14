@@ -174,7 +174,7 @@ pub fn parse_with_parents(
             _ => SpringMode::Spring,
         };
         let default_angle = match kind.as_str() {
-            "body" => 20.0,
+            "body" => 1.0,
             "clothing" => 70.0,
             _ => 80.0,
         };
