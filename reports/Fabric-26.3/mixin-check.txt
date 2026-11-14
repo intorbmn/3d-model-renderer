@@ -1,0 +1,10 @@
+[WARN] VivecraftVRArmHelperMixin: target class org.vivecraft.client_vr.render.helpers.VRArmHelper
+         -> not found (@Pseudo: skipped)
+[WARN] GuiEntityRendererMixin: @Inject mmdskin$enterGuiPass: parameters differ from target
+         -> target(GuiEntityRenderState, PoseStack, SubmitNodeCollector) vs handler()
+[WARN] GuiEntityRendererMixin: @Inject mmdskin$exitGuiPass: parameters differ from target
+         -> target(GuiEntityRenderState, PoseStack, SubmitNodeCollector) vs handler()
+[WARN] LivingEntityRendererMixin: @Inject mmdskin$submitModel: parameters differ from target
+         -> target(LivingEntityRenderState, PoseStack, SubmitNodeCollector, CameraRenderState) vs handler(S, PoseStack, SubmitNodeCollector, CameraRenderState)
+
+13 mixins checked: 0 FAIL, 4 WARN, 36 OK

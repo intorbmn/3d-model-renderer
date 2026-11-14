@@ -1,0 +1,5 @@
+commit: a2be3e1312c4fc6188e09d3d3e4ddbfb233d2602
+branch: Fabric-26.3
+run:    https://github.com/intorbmn/3d-model-renderer/actions/runs/43595180709
+time:   2026-11-14T12:30:51Z
+subject: CI: build LoongArch64 C++ without linker relaxation (lld 18)
