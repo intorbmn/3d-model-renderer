@@ -233,6 +233,9 @@ pub(crate) fn infer_from_names(joints: &[(usize, String)]) -> HashMap<usize, Str
             Some(base) if matches!(base, "hip" | "knee" | "foot" | "leg" | "ankle") && side != Side::Center => {
                 (base.to_string(), 2u8)
             }
+            // A "pelvis" sits below the hips in rigs that have both (KKBP: Hips -> Pelvis, Spine);
+            // it only stands in for the hips when there is no hips bone.
+            _ if core == "pelvis" => (core, 0u8),
             _ => (core, 1u8),
         };
 
@@ -307,6 +310,17 @@ fn offer(chosen: &mut HashMap<String, (usize, u8)>, name: String, node: usize, p
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hips_win_over_pelvis() {
+        let names: Vec<String> = ["Center", "Pelvis", "Hips", "Spine", "Chest", "Neck", "Head", "Left arm", "Left elbow",
+            "Left wrist", "Right arm", "Right elbow", "Right wrist", "Left leg", "Left knee", "Left ankle", "Right leg",
+            "Right knee", "Right ankle"].iter().map(|s| s.to_string()).collect();
+        let joints: Vec<(usize, String)> = names.into_iter().enumerate().collect();
+        let mapping = infer_from_names(&joints);
+        let hips = mapping.iter().find(|(_, h)| h.as_str() == "hips").map(|(n, _)| *n);
+        assert_eq!(hips, Some(2));
+    }
 
     fn infer(names: &[&str]) -> HashMap<String, String> {
         let joints: Vec<(usize, String)> = names.iter().enumerate().map(|(i, n)| (i, n.to_string())).collect();

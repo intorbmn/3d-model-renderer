@@ -319,7 +319,7 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
     let path = path.as_ref();
     let model_dir = path.parent().unwrap_or_else(|| Path::new("."));
 
-    let (document, buffers, images) =
+    let (document, mut buffers, images) =
         gltf::import(path).map_err(|e| MmdError::VrmParse(format!("glTF 加载失败: {}", e)))?;
 
     // A plain glTF/GLB (no VRM extension) is loaded through the same path with empty VRM metadata.
@@ -343,6 +343,18 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
     } else {
         vrm_skeleton::VRM_TO_PMX_SCALE
     };
+    // Character-maker edits from a card (shape.json): baked into the rest pose. The unit scale stays
+    // the one of the unedited model, so a bigger head makes a taller character instead of a smaller one.
+    if let Some(edit) = super::shape_sidecar::load(path).filter(|e| !e.is_empty()) {
+        let moved = super::shape_sidecar::apply(&document, &mut buffers, &edit);
+        log::info!(
+            "shape.json: {} bone edit(s), {} hidden material(s), {} vertices moved",
+            edit.bones.len(),
+            edit.hidden_materials.len(),
+            moved
+        );
+        mesh = vrm_mesh::merge_meshes(&document, &buffers, xz_sign)?;
+    }
     for v in &mut mesh.vertices {
         v.position *= unit_scale;
     }

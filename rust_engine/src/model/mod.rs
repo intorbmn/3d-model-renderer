@@ -8,6 +8,7 @@ mod submesh;
 mod bone_mapping;
 mod humanoid_inference;
 pub mod physics_sidecar;
+pub mod shape_sidecar;
 mod vrm_extensions;
 mod vrm_loader;
 mod vrm_material;
