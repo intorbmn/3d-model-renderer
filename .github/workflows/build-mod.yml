@@ -134,6 +134,9 @@ jobs:
           CARGO_TARGET_LOONGARCH64_UNKNOWN_LINUX_GNU_LINKER: loongarch64-linux-gnu-gcc
           # Current rustc passes --no-rosegment, which GNU ld for LoongArch does not know: link with lld.
           CARGO_TARGET_LOONGARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=lld
+          # lld 18 cannot link GCC 14's relaxable LoongArch code (the C++ physics library).
+          CFLAGS_loongarch64_unknown_linux_gnu: -mno-relax
+          CXXFLAGS_loongarch64_unknown_linux_gnu: -mno-relax
           CC_loongarch64_unknown_linux_gnu: loongarch64-linux-gnu-gcc
           CXX_loongarch64_unknown_linux_gnu: loongarch64-linux-gnu-g++
           AR_loongarch64_unknown_linux_gnu: loongarch64-linux-gnu-ar
