@@ -438,7 +438,17 @@ pub fn load_vrm_with_extensions<P: AsRef<Path>>(path: P) -> Result<LoadedVrmMode
         .nodes()
         .filter_map(|node| node.name().map(|name| (name.to_string(), node.index())))
         .collect();
-    if let Some((springs, groups)) = super::physics_sidecar::load(path, &node_by_name) {
+    let parent_of: HashMap<String, String> = document
+        .nodes()
+        .flat_map(|parent| {
+            let parent_name = parent.name().unwrap_or("").to_string();
+            parent
+                .children()
+                .filter_map(move |child| child.name().map(|n| (n.to_string(), parent_name.clone())))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if let Some((springs, groups)) = super::physics_sidecar::load_with_parents(path, &node_by_name, &parent_of) {
         for group in &groups {
             log::info!("physics group '{}' ({}): {} chain(s)", group.name, group.kind, group.chains);
         }

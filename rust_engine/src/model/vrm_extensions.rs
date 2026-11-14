@@ -285,6 +285,9 @@ pub struct SpringSettings {
     pub last_is_tail: bool,
     /// Furthest a joint may turn away from its rest direction, in radians.
     pub max_angle: Option<f32>,
+    /// Jiggle chains: how far the chain's first bone may also move (bounce), as a fraction of its
+    /// bone length. The whole mass moves, not only the tip (0 = it only turns).
+    pub translation: f32,
 }
 
 #[derive(Debug, Clone, Default)]

@@ -51,6 +51,16 @@ pub fn sidecar_path(model_path: &Path) -> Option<PathBuf> {
 /// Reads the sidecar. `node_by_name` maps glTF node names to node indices. Returns `None` when
 /// there is no sidecar or it cannot be read (the model then keeps its own spring bones).
 pub fn load(model_path: &Path, node_by_name: &HashMap<String, usize>) -> Option<(SpringBoneData, Vec<GroupInfo>)> {
+    load_with_parents(model_path, node_by_name, &HashMap::new())
+}
+
+/// Like `load`; `parent_of` (node name → parent node name) lets body chains start from the bone
+/// that carries the whole breast (see `extend_body_chain`).
+pub fn load_with_parents(
+    model_path: &Path,
+    node_by_name: &HashMap<String, usize>,
+    parent_of: &HashMap<String, String>,
+) -> Option<(SpringBoneData, Vec<GroupInfo>)> {
     let path = sidecar_path(model_path)?;
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
@@ -60,7 +70,7 @@ pub fn load(model_path: &Path, node_by_name: &HashMap<String, usize>) -> Option<
         }
     };
     match serde_json::from_str::<Value>(&text) {
-        Ok(json) => Some(parse(&json, node_by_name)),
+        Ok(json) => Some(parse_with_parents(&json, node_by_name, parent_of)),
         Err(e) => {
             log::warn!("physics.json is not valid JSON ({}): {e}", path.display());
             None
@@ -79,7 +89,48 @@ fn vec3_of(value: Option<&Value>, default: [f32; 3]) -> [f32; 3] {
     }
 }
 
+fn side_of(name: &str) -> Option<char> {
+    if name.ends_with("_L") || name.ends_with(".L") || name.starts_with("Left") {
+        Some('L')
+    } else if name.ends_with("_R") || name.ends_with(".R") || name.starts_with("Right") {
+        Some('R')
+    } else {
+        None
+    }
+}
+
+/// A bust chain from older cards starts below the bone that holds the whole breast (in KKBP files
+/// the base of the breast hangs from `cf_s_bust00_L`, beside `cf_j_bust02_L`), so only the tip
+/// moved. Bust bones of the same side above the first one are put in front (at most two).
+pub fn extend_body_chain(chain: &[String], parent_of: &HashMap<String, String>) -> Vec<String> {
+    let mut out = chain.to_vec();
+    let Some(first) = chain.first() else {
+        return out;
+    };
+    let side = side_of(first);
+    let mut current = first.clone();
+    for _ in 0..2 {
+        let Some(parent) = parent_of.get(&current) else {
+            break;
+        };
+        if side.is_none() || side_of(parent) != side || !parent.to_ascii_lowercase().contains("bust") || out.contains(parent) {
+            break;
+        }
+        out.insert(0, parent.clone());
+        current = parent.clone();
+    }
+    out
+}
+
 pub fn parse(json: &Value, node_by_name: &HashMap<String, usize>) -> (SpringBoneData, Vec<GroupInfo>) {
+    parse_with_parents(json, node_by_name, &HashMap::new())
+}
+
+pub fn parse_with_parents(
+    json: &Value,
+    node_by_name: &HashMap<String, usize>,
+    parent_of: &HashMap<String, String>,
+) -> (SpringBoneData, Vec<GroupInfo>) {
     let mut data = SpringBoneData::default();
     let mut infos = Vec::new();
 
@@ -123,12 +174,17 @@ pub fn parse(json: &Value, node_by_name: &HashMap<String, usize>) -> (SpringBone
             _ => SpringMode::Spring,
         };
         let default_angle = match kind.as_str() {
-            "body" => 25.0,
+            "body" => 20.0,
             "clothing" => 70.0,
             _ => 80.0,
         };
         let max_angle = f32_of(group.get("maxAngle"), default_angle).clamp(1.0, 180.0).to_radians();
-        let settings = SpringSettings { mode, last_is_tail: true, max_angle: Some(max_angle) };
+        let translation = if mode == SpringMode::Jiggle {
+            f32_of(group.get("translation"), if kind == "body" { 0.3 } else { 0.0 }).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        let settings = SpringSettings { mode, last_is_tail: true, max_angle: Some(max_angle), translation };
         let collider_groups: Vec<usize> = group
             .get("colliders")
             .and_then(Value::as_array)
@@ -139,11 +195,14 @@ pub fn parse(json: &Value, node_by_name: &HashMap<String, usize>) -> (SpringBone
 
         let mut chains = 0;
         for chain in group.get("chains").and_then(Value::as_array).into_iter().flatten() {
-            let joints: Vec<SpringBoneJoint> = chain
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(|bone| bone.as_str().and_then(|b| node_by_name.get(b)).copied())
+            let mut names: Vec<String> =
+                chain.as_array().into_iter().flatten().filter_map(|b| b.as_str().map(str::to_string)).collect();
+            if kind == "body" {
+                names = extend_body_chain(&names, parent_of);
+            }
+            let joints: Vec<SpringBoneJoint> = names
+                .iter()
+                .filter_map(|bone| node_by_name.get(bone.as_str()).copied())
                 .map(|node| SpringBoneJoint { node, hit_radius, stiffness, gravity_power, gravity_dir, drag_force })
                 .collect();
             if joints.len() < 2 {
@@ -189,5 +248,26 @@ mod tests {
         assert!((data.springs[0].joints[0].stiffness - 0.8).abs() < 1e-6);
         assert_eq!(infos[0], GroupInfo { name: "Hair".into(), kind: "hair".into(), chains: 1 });
         assert_eq!(infos[1].kind, "custom");
+    }
+
+    #[test]
+    fn body_chains_start_from_the_whole_breast() {
+        let parent_of: HashMap<String, String> = [
+            ("cf_j_bust03_L", "cf_j_bust02_L"),
+            ("cf_j_bust02_L", "cf_s_bust00_L"),
+            ("cf_s_bust00_L", "cf_d_bust00"),
+            ("cf_d_bust00", "Upper Chest"),
+        ]
+        .into_iter()
+        .map(|(a, b)| (a.to_string(), b.to_string()))
+        .collect();
+        let chain: Vec<String> = ["cf_j_bust02_L", "cf_j_bust03_L", "cf_j_bnip02_L"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(
+            extend_body_chain(&chain, &parent_of),
+            vec!["cf_s_bust00_L", "cf_j_bust02_L", "cf_j_bust03_L", "cf_j_bnip02_L"],
+            "the unsided hub (cf_d_bust00) is not taken"
+        );
+        let studio: Vec<String> = ["cf_s_bust00_L", "cf_j_bust02_L"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(extend_body_chain(&studio, &parent_of), studio, "already starting there");
     }
 }

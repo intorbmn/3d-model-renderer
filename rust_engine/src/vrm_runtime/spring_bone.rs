@@ -85,6 +85,22 @@ struct SpringJointRuntime {
     /// Per collider of the chain: how close the tail may come to it (collider radius plus hit
     /// radius, or less when the tail is closer than that at rest; 0 = ignored).
     collider_limits: Vec<f32>,
+    /// The first joint of a jiggle chain also moves (bounces) on a spring of its own.
+    bounce: Option<Bounce>,
+}
+
+/// Position spring of a jiggle chain's first bone: the whole mass bounces and lags, like the
+/// breast physics of character-action games (Zenless Zone Zero, ...), while the joints below add
+/// the swing.
+#[derive(Clone, Debug)]
+struct Bounce {
+    /// Rest position relative to the parent bone.
+    rest_local: Vec3,
+    /// Where the bone is (model space) and how fast it moves.
+    position: Vec3,
+    velocity: Vec3,
+    /// Furthest it may move from its rest position.
+    max_offset: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -174,7 +190,29 @@ impl SpringBoneRuntime {
                 let Some(transform) = bones.get_bone(joint.bone_index) else {
                     continue;
                 };
-                let bone_position = transform.position();
+                let mut bone_position = transform.position();
+                if let Some(bounce) = joint.bounce.as_mut() {
+                    let parent = parent_transform_of(bones, joint.bone_index);
+                    let rest = parent.transform_point3(bounce.rest_local);
+                    let (omega, zeta) = jiggle_constants(joint.stiffness, joint.drag_force);
+                    let target = rest + joint.gravity_dir * (joint.gravity_power * joint.rest_length * 0.5);
+                    if !bounce.position.is_finite() || (bounce.position - rest).length() > bounce.max_offset * 4.0 + 1e-3 {
+                        bounce.position = rest;
+                        bounce.velocity = Vec3::ZERO;
+                    }
+                    let acceleration = (target - bounce.position) * (omega * omega)
+                        - bounce.velocity * (2.0 * zeta * omega)
+                        + external(bounce.position);
+                    bounce.velocity += acceleration * h;
+                    let mut next = bounce.position + bounce.velocity * h;
+                    let offset = next - rest;
+                    if offset.length() > bounce.max_offset {
+                        next = rest + offset.normalize_or_zero() * bounce.max_offset;
+                    }
+                    bounce.velocity = (next - bounce.position) / h;
+                    bounce.position = next;
+                    bone_position = next;
+                }
                 let parent_rotation = parent_rotation_of(bones, joint.bone_index);
                 let rest_dir = (parent_rotation * joint.init_local_rotation * joint.bone_axis).normalize_or_zero();
                 let rest_tail = bone_position + rest_dir * joint.rest_length;
@@ -253,7 +291,7 @@ impl SpringBoneRuntime {
                 let Some(transform) = bones.get_bone(joint.bone_index) else {
                     continue;
                 };
-                let bone_position = transform.position();
+                let bone_position = joint.bounce.as_ref().map_or(transform.position(), |b| b.position);
                 let tail = joint.state.current_world(bones);
                 if !tail.is_finite() {
                     continue;
@@ -284,6 +322,15 @@ impl SpringBoneRuntime {
 fn jiggle_constants(stiffness: f32, drag: f32) -> (f32, f32) {
     let frequency = 1.0 + 1.5 * stiffness.clamp(0.0, 4.0);
     (TAU * frequency, 0.1 + 0.8 * drag.clamp(0.0, 1.0))
+}
+
+fn parent_transform_of(bones: &BoneManager, bone_index: usize) -> Mat4 {
+    bones
+        .get_bone(bone_index)
+        .and_then(|bone| bone.parent_id())
+        .and_then(|index| bones.get_bone(index))
+        .map(|parent| parent.global_transform())
+        .unwrap_or(Mat4::IDENTITY)
 }
 
 fn parent_rotation_of(bones: &BoneManager, bone_index: usize) -> Quat {
@@ -370,6 +417,18 @@ fn resolve_chain(
     if joints.is_empty() {
         None
     } else {
+        if spring.settings.mode == SpringMode::Jiggle && spring.settings.translation > 0.0 {
+            if let Some(first) = joints.first_mut() {
+                if let Some(bone) = bones.get_bone(first.bone_index) {
+                    first.bounce = Some(Bounce {
+                        rest_local: bone.local_transform().to_scale_rotation_translation().2,
+                        position: bone.position(),
+                        velocity: Vec3::ZERO,
+                        max_offset: first.rest_length * spring.settings.translation,
+                    });
+                }
+            }
+        }
         Some(SpringChainRuntime {
             joints,
             collider_indices,
@@ -436,6 +495,7 @@ fn resolve_joint(
         state,
         velocity: Vec3::ZERO,
         collider_limits: Vec::new(),
+        bounce: None,
     })
 }
 
@@ -729,6 +789,7 @@ mod tests {
                     mode: SpringMode::Jiggle,
                     last_is_tail: true,
                     max_angle: Some(25f32.to_radians()),
+                    translation: 0.0,
                 },
             }],
             colliders: vec![],
@@ -786,5 +847,52 @@ mod tests {
         runtime.process(&mut bones, 10.0); // a hitch: at most four steps, the rest dropped
         assert!(runtime.accumulator < STEP);
         assert!(tip(&bones).is_finite());
+    }
+
+    #[test]
+    fn a_jiggle_root_bounces_when_its_parent_moves_and_settles_back() {
+        let mut bones = BoneManager::new();
+        let mut root = BoneLink::new("root".to_string());
+        root.parent_index = -1;
+        bones.add_bone(root);
+        let mut a = BoneLink::new("bust".to_string());
+        a.initial_position = Vec3::new(0.0, 1.0, 0.0);
+        a.parent_index = 0;
+        bones.add_bone(a);
+        let mut b = BoneLink::new("tip".to_string());
+        b.initial_position = Vec3::new(0.0, 1.0, 1.0);
+        b.parent_index = 1;
+        bones.add_bone(b);
+        bones.build_hierarchy();
+        let data = SpringBoneData {
+            springs: vec![SpringBoneSpring {
+                joints: vec![joint(1, 2.5, 0.0, 0.45), joint(2, 2.5, 0.0, 0.45)],
+                collider_groups: vec![],
+                center: None,
+                settings: SpringSettings {
+                    mode: SpringMode::Jiggle,
+                    last_is_tail: true,
+                    max_angle: Some(20f32.to_radians()),
+                    translation: 0.3,
+                },
+            }],
+            colliders: vec![],
+            collider_groups: vec![],
+        };
+        let mut runtime = SpringBoneRuntime::new(data, &bones);
+        // The body jumps up: the bust lags behind (stays lower than its rest), within its limit.
+        let jump = |_: Vec3| Vec3::new(0.0, -60.0, 0.0);
+        let mut lowest = f32::INFINITY;
+        for _ in 0..6 {
+            runtime.process_with_motion(&mut bones, 1.0 / 60.0, jump);
+            lowest = lowest.min(bones.get_bone(1).unwrap().position().y);
+        }
+        assert!(lowest < 0.99, "the bust root moves, not only the tip: lowest y {lowest}");
+        assert!(lowest >= 1.0 - 0.3 - 1e-3, "within 30% of the bone length: {lowest}");
+        for _ in 0..240 {
+            runtime.process(&mut bones, 1.0 / 60.0);
+        }
+        let settled = bones.get_bone(1).unwrap().position();
+        assert!((settled - Vec3::new(0.0, 1.0, 0.0)).length() < 0.01, "settles back: {settled}");
     }
 }
