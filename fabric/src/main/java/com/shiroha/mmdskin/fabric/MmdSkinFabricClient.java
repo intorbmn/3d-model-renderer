@@ -15,6 +15,19 @@ public class MmdSkinFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         MmdSkinConfig.init();
+        // Before resources load, so the toon shader is compiled with Minecraft's.
+        com.shiroha.mmdskin.render.toon.ToonRendering.init(new com.shiroha.mmdskin.render.toon.ToonRendering.Hooks() {
+            @Override
+            public com.mojang.renderpearl.api.pipeline.RenderPipeline registerOptional(com.mojang.renderpearl.api.pipeline.RenderPipeline pipeline) {
+                return com.shiroha.mmdskin.mixin.fabric.RenderPipelinesAccessor.mmdskin$registerOptional(pipeline);
+            }
+
+            @Override
+            public net.minecraft.client.renderer.rendertype.RenderType createRenderType(String name,
+                    net.minecraft.client.renderer.rendertype.RenderSetup setup) {
+                return com.shiroha.mmdskin.mixin.fabric.RenderTypeAccessor.mmdskin$create(name, setup);
+            }
+        });
         MmdSkinClient.initClient();
         MmdSkinRegisterClient.Register();
         ClientRenderRuntime.get().renderBackendSettings().setShaderEnabled(com.shiroha.mmdskin.config.ConfigManager.isMMDShaderEnabled());

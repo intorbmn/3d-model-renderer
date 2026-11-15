@@ -8,6 +8,8 @@
     "compat.VivecraftVRArmHelperMixin",
     "CameraMixin",
     "KeyMappingAccessor",
+    "RenderPipelinesAccessor",
+    "RenderTypeAccessor",
     "LevelExtractorMixin",
     "MinecraftMixin",
     "MouseHandlerMixin",

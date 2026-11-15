@@ -5,8 +5,8 @@
 #include <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D Sampler0;
-// The toon settings, one pixel each (see ToonRendering): 0 = shadow colour + bands / 5,
-// 1 = rim power / 10, rim intensity, specular power / 128, specular intensity.
+// The toon settings, one grey pixel per value (see ToonRendering): shadow red, green, blue,
+// bands / 5, rim power / 10, rim intensity, specular power / 128, specular intensity.
 uniform sampler2D ToonParams;
 
 layout(location = 0) in float sphericalVertexDistance;
@@ -22,6 +22,10 @@ layout(location = 9) in vec3 viewLight1;
 
 layout(location = 0) out vec4 fragColor;
 
+float param(int index) {
+    return texelFetch(ToonParams, ivec2(index, 0), 0).r;
+}
+
 float saturate(float value) {
     return clamp(value, 0.0, 1.0);
 }
@@ -34,14 +38,12 @@ void main() {
     }
 #endif
 
-    vec4 p0 = texelFetch(ToonParams, ivec2(0, 0), 0);
-    vec4 p1 = texelFetch(ToonParams, ivec2(1, 0), 0);
-    vec3 shadowSetting = p0.rgb;
-    float bands = max(floor(p0.a * 5.0 + 0.5), 2.0);
-    float rimPower = max(p1.r * 10.0, 0.1);
-    float rimIntensity = p1.g;
-    float specularPower = max(p1.b * 128.0, 1.0);
-    float specularIntensity = p1.a;
+    vec3 shadowSetting = vec3(param(0), param(1), param(2));
+    float bands = max(floor(param(3) * 5.0 + 0.5), 2.0);
+    float rimPower = max(param(4) * 10.0, 0.1);
+    float rimIntensity = param(5);
+    float specularPower = max(param(6) * 128.0, 1.0);
+    float specularIntensity = param(7);
 
     vec3 albedo = texColor.rgb;
     vec3 normal = normalize(gl_FrontFacing ? viewNormal : -viewNormal);

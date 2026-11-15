@@ -106,7 +106,12 @@ jobs:
           LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
           mkdir -p build/shader-check
           javac -cp "$LIBS" -d build/shader-check ci/shader-check/ShaderCheck.java
-          java -cp "build/shader-check:$LIBS" ShaderCheck "$JAR" common/src/main/resources \
+          # LWJGL's native libraries (shaderc) for Linux.
+          mkdir -p build/shader-check/natives
+          find "$HOME/.gradle" -type f -name 'lwjgl*natives-linux.jar' ! -name '*arm*' -exec unzip -q -o -j {} '*.so' -d build/shader-check/natives \; 2>/dev/null
+          find "$HOME/.gradle" -type f \( -name 'liblwjgl*.so' -o -name 'libshaderc*.so' \) -exec cp -n {} build/shader-check/natives/ \; 2>/dev/null
+          ls build/shader-check/natives
+          java -Dorg.lwjgl.librarypath="$PWD/build/shader-check/natives" -cp "build/shader-check:$LIBS" ShaderCheck "$JAR" common/src/main/resources \
             'minecraft:core/entity.vsh:PER_FACE_LIGHTING' \
             'minecraft:core/entity.fsh:PER_FACE_LIGHTING,ALPHA_CUTOUT=0.1' \
             'mmdskin:core/toon.vsh' \

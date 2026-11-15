@@ -52,6 +52,11 @@ public final class SubmitModelInstance extends BaseModelInstance {
         RenderType translucentType;
 
         RenderType renderType(boolean translucent) {
+            // Toon shading when it is on and its shader works; the vanilla entity shader otherwise.
+            RenderType toon = com.shiroha.mmdskin.render.toon.ToonRendering.renderType(texture, translucent);
+            if (toon != null) {
+                return toon;
+            }
             if (translucent) {
                 if (translucentType == null) {
                     translucentType = RenderTypes.entityTranslucent(texture);
