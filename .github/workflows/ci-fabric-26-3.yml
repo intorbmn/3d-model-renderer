@@ -84,6 +84,7 @@ jobs:
           LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
           { echo "## Minecraft 26.3 render API"; echo; ci/dump-render-api.sh "$JAR" "$LIBS"; } > ci-report/render-api.md
           cat ci-report/render-api.md >> "$GITHUB_STEP_SUMMARY"
+          ci/dump-renderpearl.sh ci-report/renderpearl "$JAR" "$LIBS" || true
 
       - name: Inspect Minecraft 26.3 API (diagnostic)
         if: always()
