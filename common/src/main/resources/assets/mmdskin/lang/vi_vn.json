@@ -28,7 +28,7 @@
   "gui.mmdskin.menu.edit_actions": "Sửa danh sách yêu thích…",
   "gui.mmdskin.menu.edit_expressions": "Sửa danh sách biểu cảm…",
   "gui.mmdskin.menu.config.render": "Hiển thị",
-  "gui.mmdskin.menu.config.toon": "Đổ bóng toon",
+  "gui.mmdskin.menu.config.toon": "Toon (hiện mới có viền)",
   "gui.mmdskin.menu.config.outline": "Viền toon",
   "gui.mmdskin.menu.config.first_person": "Hiện model ở góc nhìn thứ nhất",
   "gui.mmdskin.menu.config.performance": "Hiệu năng",

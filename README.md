@@ -12,7 +12,7 @@ A Fabric mod for **Minecraft 26.3** that replaces players and mobs with 3D model
 
 ## Status
 
-In development; there is no official release yet.
+Released: [1.0.0 for Minecraft 26.3 (Fabric)](https://github.com/intorbmn/3d-model-renderer/releases/tag/v1.0.0-26.3-fabric). The `Fabric-26.3` branch has newer work (Alt menu, distance LOD, performance).
 
 | Area | Status |
 |---|---|

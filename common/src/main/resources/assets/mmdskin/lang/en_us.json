@@ -359,7 +359,7 @@
   "gui.mmdskin.menu.edit_actions": "Edit favourites…",
   "gui.mmdskin.menu.edit_expressions": "Edit expressions…",
   "gui.mmdskin.menu.config.render": "Rendering",
-  "gui.mmdskin.menu.config.toon": "Toon shading",
+  "gui.mmdskin.menu.config.toon": "Toon (outline only for now)",
   "gui.mmdskin.menu.config.outline": "Toon outline",
   "gui.mmdskin.menu.config.first_person": "Model in first person",
   "gui.mmdskin.menu.config.performance": "Performance",

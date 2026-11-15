@@ -12,7 +12,7 @@ Mod Fabric cho **Minecraft 26.3**, thay hình người chơi và mob bằng mode
 
 ## Trạng thái
 
-Đang phát triển, chưa có bản phát hành chính thức.
+Đã phát hành: [1.0.0 cho Minecraft 26.3 (Fabric)](https://github.com/intorbmn/3d-model-renderer/releases/tag/v1.0.0-26.3-fabric). Nhánh `Fabric-26.3` có phần mới hơn (menu Alt, model giản lược khi ở xa, tối ưu hiệu năng).
 
 | Hạng mục | Trạng thái |
 |---|---|

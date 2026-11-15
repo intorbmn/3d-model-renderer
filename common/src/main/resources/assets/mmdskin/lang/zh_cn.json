@@ -359,7 +359,7 @@
   "gui.mmdskin.menu.edit_actions": "编辑收藏…",
   "gui.mmdskin.menu.edit_expressions": "编辑表情…",
   "gui.mmdskin.menu.config.render": "渲染",
-  "gui.mmdskin.menu.config.toon": "卡通着色",
+  "gui.mmdskin.menu.config.toon": "卡通（目前仅描边）",
   "gui.mmdskin.menu.config.outline": "卡通描边",
   "gui.mmdskin.menu.config.first_person": "第一人称显示模型",
   "gui.mmdskin.menu.config.performance": "性能",

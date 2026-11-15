@@ -1,6 +1,6 @@
 # Lộ trình phát triển 3D Model Renderer
 
-Cập nhật: 2026-11-13. Tài liệu này gồm hai phần: mức độ đầy đủ so với bản gốc MMD Skin, và kế hoạch cho các tính năng mới. Thứ tự các giai đoạn là thứ tự đề xuất làm.
+Cập nhật: 2026-11-15. Tài liệu này gồm hai phần: mức độ đầy đủ so với bản gốc MMD Skin, và kế hoạch cho các tính năng mới. Thứ tự các giai đoạn là thứ tự đề xuất làm.
 
 ## Phần A. So với bản gốc (MMD Skin)
 
@@ -14,7 +14,7 @@ Cập nhật: 2026-11-13. Tài liệu này gồm hai phần: mức độ đầy 
 | Vật phẩm cầm tay bám theo xương tay | Có | |
 | Xem trước trong inventory | Có | Hướng và tỉ lệ cần kiểm tra thêm trong game |
 | Đồng bộ nhiều người chơi | Có | Giao thức giữ nguyên, đổi sang payload của 26.3 |
-| Vòng menu, chọn model, cài đặt | Có | |
+| Vòng menu, chọn model, cài đặt | Có, đổi dạng | Menu Alt dạng tab tĩnh (cài đặt, model, animation, biểu cảm, outfit, material, cảnh, sân khấu) thay vòng tròn; bấm Alt để mở/đóng thay vì giữ rồi thả. Các menu vòng còn lại (maid, thẻ model) thành danh sách tĩnh |
 | Viền toon (outline) | Có, mới port | Vẽ bằng kỹ thuật inverted hull; chỉ bật khi bật toon trong cài đặt |
 | Ẩn tay gốc ở góc nhìn thứ nhất | Có, mới port | `FirstPersonHandsMixin`; phần hook riêng cho tay VR của Vivecraft chưa port |
 | Tô bóng toon (cel shading, rim, specular) | Chưa | Cần shader riêng; xem giai đoạn 4 |
@@ -67,7 +67,9 @@ Ba mục toon, GPU skinning và MMD shader đều tắt mặc định ở bản 
 
 ### Giai đoạn 3. Làm lại toàn bộ UI theo dạng tĩnh, đổi phong cách
 
-**Hiện trạng.** Vòng menu (`ui/wheel/AbstractWheelScreen.java`) vẽ từng hình quạt bằng cách tô từng dòng ngang qua `fill()`, lặp lại mỗi khung hình, cộng thêm hiệu ứng lò xo cho từng ô. Đây là nguồn gây lag chính của UI: mỗi khung hình phát sinh hàng nghìn lệnh tô. Các màn hình khác (`ui/selector`, `ui/stage`, `ui/config`) tự vẽ nền mờ và khung riêng.
+**Đã làm một phần (2026-11-14).** Menu Alt dạng tab tĩnh (`ui/menu`), và `AbstractWheelScreen` giờ vẽ danh sách tĩnh nên mọi menu vòng cũ hết lag. Còn lại: bộ thành phần dùng chung cho các màn hình `ui/selector`, `ui/stage`, `ui/config`.
+
+**Hiện trạng trước đó.** Vòng menu (`ui/wheel/AbstractWheelScreen.java`) vẽ từng hình quạt bằng cách tô từng dòng ngang qua `fill()`, lặp lại mỗi khung hình, cộng thêm hiệu ứng lò xo cho từng ô. Đây là nguồn gây lag chính của UI: mỗi khung hình phát sinh hàng nghìn lệnh tô. Các màn hình khác (`ui/selector`, `ui/stage`, `ui/config`) tự vẽ nền mờ và khung riêng.
 
 **Hướng thiết kế.**
 - **Tĩnh.** Bố cục chỉ tính lại khi mở màn hình hoặc đổi kích thước cửa sổ. Không còn hiệu ứng chạy theo khung hình. Trạng thái hover chỉ đổi màu.

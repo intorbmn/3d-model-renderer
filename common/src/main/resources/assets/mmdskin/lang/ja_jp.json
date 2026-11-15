@@ -348,7 +348,7 @@
   "gui.mmdskin.menu.edit_actions": "お気に入りを編集…",
   "gui.mmdskin.menu.edit_expressions": "表情を編集…",
   "gui.mmdskin.menu.config.render": "描画",
-  "gui.mmdskin.menu.config.toon": "トゥーン陰影",
+  "gui.mmdskin.menu.config.toon": "トゥーン（現在は輪郭のみ）",
   "gui.mmdskin.menu.config.outline": "トゥーン輪郭",
   "gui.mmdskin.menu.config.first_person": "一人称でモデルを表示",
   "gui.mmdskin.menu.config.performance": "パフォーマンス",
