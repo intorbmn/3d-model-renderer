@@ -159,6 +159,8 @@ final class MenuTabs {
             }
             List<MenuRow> buttons = new ArrayList<>();
             buttons.add(MenuRow.item(tr("gui.mmdskin.refresh"), service::refreshModelCatalog));
+            buttons.add(MenuRow.item(tr("gui.mmdskin.menu.model_details"),
+                    () -> menu.open(com.shiroha.mmdskin.ui.selector.ModelSelectorScreen::new)));
             buttons.add(MenuRow.item(tr("gui.mmdskin.model_settings.title"),
                     configurable ? () -> menu.open(() -> new ModelSettingsScreen(current, menu)) : null));
             buttons.add(MenuRow.item(tr("gui.mmdskin.menu.model_animations"),

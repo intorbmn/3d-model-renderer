@@ -394,5 +394,6 @@
   "gui.mmdskin.companion.edit_title": "%s 的动作",
   "gui.mmdskin.companion.edit_hint": "已选 %s",
   "gui.mmdskin.mod_settings.mesh_lod_distance": "简化模型距离",
-  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "超过此距离（格）的模型只绘制约四分之一的三角形。0 为关闭。"
+  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "超过此距离（格）的模型只绘制约四分之一的三角形。0 为关闭。",
+  "gui.mmdskin.menu.model_details": "详细列表…"
 }

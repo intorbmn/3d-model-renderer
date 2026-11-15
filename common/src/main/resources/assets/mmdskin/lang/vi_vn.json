@@ -64,5 +64,6 @@
   "gui.mmdskin.companion.edit_hint": "Đã chọn %s",
   "key.mmdskin.config_wheel": "Mở menu",
   "gui.mmdskin.mod_settings.mesh_lod_distance": "Khoảng cách dùng model giản lược",
-  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "Xa hơn số khối này, model được vẽ với khoảng một phần tư số tam giác. 0 để tắt."
+  "gui.mmdskin.mod_settings.mesh_lod_distance.tooltip": "Xa hơn số khối này, model được vẽ với khoảng một phần tư số tam giác. 0 để tắt.",
+  "gui.mmdskin.menu.model_details": "Danh sách chi tiết…"
 }
