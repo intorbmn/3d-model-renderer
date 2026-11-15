@@ -98,7 +98,11 @@ jobs:
             'com.mojang.renderpearl.api.pipeline.ShaderSource' \
             'com.mojang.renderpearl.api.vertex.VertexFormat:builder' \
             'com.mojang.renderpearl.api.vertex.VertexFormatElement:register' \
-            'com.mojang.blaze3d.vertex.DefaultVertexFormat' || true
+            'com.mojang.blaze3d.vertex.DefaultVertexFormat' \
+            'com.mojang.blaze3d.pipeline.PipelineCache:insert|get|getOrCompile|compile|clear|PipelineCache' \
+            'com.mojang.renderpearl.api.device.GpuDevice' \
+            'net.minecraft.client.renderer.ShaderManager$Configs' \
+            'net.minecraft.client.renderer.ShaderManager$PendingResults' || true
 
       - name: Compile the mod's shaders with Minecraft's shaderc
         run: |
