@@ -106,10 +106,16 @@ jobs:
           LIBS=$(find "$HOME/.gradle/caches/modules-2" -type f -name '*.jar' ! -name '*sources*' 2>/dev/null | paste -sd:)
           mkdir -p build/shader-check
           javac -cp "$LIBS" -d build/shader-check ci/shader-check/ShaderCheck.java
-          # LWJGL's native libraries (shaderc) for Linux.
+          # LWJGL's native libraries (core + shaderc) for Linux, the version Minecraft uses.
           mkdir -p build/shader-check/natives
-          find "$HOME/.gradle" -type f -name 'lwjgl*natives-linux.jar' ! -name '*arm*' -exec unzip -q -o -j {} '*.so' -d build/shader-check/natives \; 2>/dev/null
-          find "$HOME/.gradle" -type f \( -name 'liblwjgl*.so' -o -name 'libshaderc*.so' \) -exec cp -n {} build/shader-check/natives/ \; 2>/dev/null
+          V=$(echo "$LIBS" | tr ':' '\n' | grep -o 'lwjgl-shaderc-[0-9.]*\.jar' | head -1 | sed 's/lwjgl-shaderc-//; s/\.jar//')
+          echo "LWJGL $V"
+          for a in lwjgl lwjgl-shaderc; do
+            for base in https://libraries.minecraft.net https://repo1.maven.org/maven2; do
+              curl -fsSL -o "build/shader-check/$a-natives.jar" "$base/org/lwjgl/$a/$V/$a-$V-natives-linux.jar" && break
+            done
+            unzip -q -o -j "build/shader-check/$a-natives.jar" '*.so' -x '*arm*' -d build/shader-check/natives
+          done
           ls build/shader-check/natives
           java -Dorg.lwjgl.librarypath="$PWD/build/shader-check/natives" -cp "build/shader-check:$LIBS" ShaderCheck "$JAR" common/src/main/resources \
             'minecraft:core/entity.vsh:PER_FACE_LIGHTING' \
