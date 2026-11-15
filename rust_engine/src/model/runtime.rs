@@ -176,6 +176,8 @@ pub struct MmdModel {
     uv_morph_indices: Vec<usize>,
     /// UV Morph 数量
     uv_morph_count: usize,
+    /// `update_uvs` changed since they were last copied for the renderer (UV morphs ran).
+    uvs_dirty: bool,
     /// GPU UV Morph 数据是否已初始化
     gpu_uv_morph_initialized: bool,
 
@@ -308,6 +310,7 @@ impl MmdModel {
             gpu_uv_morph_weights: Vec::new(),
             uv_morph_indices: Vec::new(),
             uv_morph_count: 0,
+            uvs_dirty: true,
             gpu_uv_morph_initialized: false,
             effective_weights_buf: Vec::new(),
             material_morph_results_flat_cache: Vec::new(),
@@ -970,6 +973,7 @@ impl MmdModel {
         // 将 UV Morph 偏移应用到 UV 缓冲区
         let uv_deltas = self.morph_manager.get_uv_morph_deltas();
         if !uv_deltas.is_empty() {
+            self.uvs_dirty = true;
             for (i, vertex) in self.vertices.iter().enumerate() {
                 if i < self.update_uvs.len() && i < uv_deltas.len() {
                     self.update_uvs[i] = vertex.uv + uv_deltas[i];
@@ -1049,7 +1053,7 @@ impl MmdModel {
         }
 
         // UVs only change with UV morphs: copied once otherwise.
-        if uvs_resized || self.uv_morph_count > 0 {
+        if uvs_resized || std::mem::take(&mut self.uvs_dirty) {
             self.update_uvs_raw
                 .par_chunks_mut(2)
                 .zip(self.update_uvs.par_iter())
@@ -2137,8 +2141,25 @@ impl MmdModel {
     }
 
     /// 获取 UV Morph 数量
-    pub fn get_uv_morph_count(&self) -> usize {
+    /// UV morphs set up for the GPU morph path (0 before `init_gpu_uv_morph_data`).
+    pub fn gpu_uv_morph_count(&self) -> usize {
         self.uv_morph_count
+    }
+
+    /// UV morphs of the model. Counted from the morphs themselves when the GPU morph data is not
+    /// set up (the CPU renderer), so it can tell that UVs change.
+    pub fn get_uv_morph_count(&self) -> usize {
+        if self.uv_morph_count > 0 {
+            return self.uv_morph_count;
+        }
+        (0..self.morph_manager.morph_count())
+            .filter_map(|i| self.morph_manager.get_morph(i))
+            .filter(|morph| {
+                (morph.morph_type == crate::morph::MorphType::Uv
+                    || morph.morph_type == crate::morph::MorphType::AdditionalUv1)
+                    && !morph.uv_offsets.is_empty()
+            })
+            .count()
     }
 
     /// 获取 GPU UV Morph 偏移数据指针

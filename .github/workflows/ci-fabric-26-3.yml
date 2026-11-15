@@ -85,6 +85,20 @@ jobs:
           { echo "## Minecraft 26.3 render API"; echo; ci/dump-render-api.sh "$JAR" "$LIBS"; } > ci-report/render-api.md
           cat ci-report/render-api.md >> "$GITHUB_STEP_SUMMARY"
           ci/dump-renderpearl.sh ci-report/renderpearl "$JAR" "$LIBS" || true
+          ci/dump-methods.sh ci-report/renderpearl/methods.txt "$JAR:$LIBS" \
+            'net.minecraft.client.renderer.rendertype.RenderType:create|RenderType' \
+            'net.minecraft.client.renderer.rendertype.RenderTypes:entityCutout|entityTranslucent|lambda\$static\$[0-9]+' \
+            'net.minecraft.client.renderer.rendertype.RenderSetup:builder|prepareTextures' \
+            'net.minecraft.client.renderer.rendertype.PreparedRenderType' \
+            'net.minecraft.client.renderer.RenderPipelines:register|getStaticPipelines' \
+            'net.minecraft.client.renderer.ShaderManager:apply|compile|preloadForStartup|getProgram|getPipeline|compilePipeline|reload|prepare' \
+            'com.mojang.blaze3d.systems.RenderSystem' \
+            'net.minecraft.client.renderer.BindGroupLayouts' \
+            'net.minecraft.client.renderer.LightTexture' \
+            'com.mojang.renderpearl.api.pipeline.ShaderSource' \
+            'com.mojang.renderpearl.api.vertex.VertexFormat:builder' \
+            'com.mojang.renderpearl.api.vertex.VertexFormatElement:register' \
+            'com.mojang.blaze3d.vertex.DefaultVertexFormat' || true
 
       - name: Inspect Minecraft 26.3 API (diagnostic)
         if: always()

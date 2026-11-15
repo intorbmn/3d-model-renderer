@@ -3087,7 +3087,7 @@ pub extern "system" fn Java_com_shiroha_mmdskin_NativeFunc_CopyGpuUvMorphWeights
     let models = MODELS.read().unwrap();
     if let Some(model_arc) = models.get(&model) {
         let model = model_arc.lock().unwrap();
-        let morph_count = model.get_uv_morph_count();
+        let morph_count = model.gpu_uv_morph_count();
         if morph_count == 0 {
             return 0;
         }
