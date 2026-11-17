@@ -4,10 +4,18 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.shiroha.mmdskin.compat.maid.render.MaidMMDRenderer;
 import com.shiroha.mmdskin.compat.maid.runtime.MaidMMDModelManager;
 import com.shiroha.mmdskin.fabric.maid.MaidCompatMixinPlugin;
-import net.minecraft.client.renderer.MultiBufferSource;
+import com.shiroha.mmdskin.render.backend.submit.RenderSubmitContext;
+import com.shiroha.mmdskin.render.entity.EntityRenderStateAccess;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,28 +23,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * TouhouLittleMaid (Orihime) 女仆渲染兼容 Mixin
  *
- * 注入 LivingEntityRenderer.render() 的 HEAD，
+ * 注入 LivingEntityRenderer.submit() 的 HEAD，
  * 运行时通过类名检测女仆实体，若已绑定 MMD 模型则替换渲染。
- *
- * 与 Forge 版使用 RenderLivingEvent.Pre 的思路一致：
- * - 目标类为 vanilla 类，始终存在，无需条件加载
- * - 通过 isMaidModLoaded() 快速跳过（未安装女仆模组时零开销）
- * - 通过类名 contains 判断是否为女仆实体（无编译期依赖）
- *
- * 注意：EntityMaidRenderer.render() 在非 YSM/GeckoLib 路径下
- * 会调用 super.render()，最终进入 LivingEntityRenderer.render()，
- * 此时本 Mixin 生效，可取消原版 Bedrock 模型渲染。
  */
 @Mixin(LivingEntityRenderer.class)
 public abstract class EntityMaidRendererMixin {
 
-    @Inject(method = "render(Lnet/minecraft/world/entity/LivingEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
-            at = @At("HEAD"), cancellable = true)
-    private void mmdskin$onRenderMaid(LivingEntity entity, float entityYaw, float partialTicks,
-                                       PoseStack poseStack, MultiBufferSource bufferIn,
-                                       int packedLightIn, CallbackInfo ci) {
+    @Unique
+    private static final Logger MMDSKIN_LOGGER = LogManager.getLogger();
 
+    @Unique
+    private static boolean mmdskin$failureLogged;
+
+    @Inject(
+        method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void mmdskin$onSubmitMaid(LivingEntityRenderState state, PoseStack poseStack,
+                                       SubmitNodeCollector collector, CameraRenderState camera,
+                                       CallbackInfo ci) {
         if (!MaidCompatMixinPlugin.isMaidModLoaded()) {
+            return;
+        }
+
+        if (!(state instanceof EntityRenderStateAccess access)) {
+            return;
+        }
+        Entity entity = access.mmdskin$entity();
+        if (!(entity instanceof LivingEntity living)) {
             return;
         }
 
@@ -49,24 +64,42 @@ public abstract class EntityMaidRendererMixin {
             return;
         }
 
-        poseStack.pushPose();
-        poseStack.translate(0, 0.01, 0);
+        float partialTick = access.mmdskin$partialTick();
+        int packedLight = state.lightCoords;
+        float entityYaw = living.getYRot(partialTick);
 
-        boolean rendered = MaidMMDRenderer.render(
-            entity,
-            entity.getUUID(),
-            entityYaw,
-            partialTicks,
-            poseStack,
-            packedLightIn
-        );
+        SubmitNodeCollector previous = RenderSubmitContext.begin(collector);
+        try {
+            poseStack.pushPose();
+            poseStack.translate(0, 0.01, 0);
 
-        poseStack.popPose();
+            boolean rendered;
+            try {
+                rendered = MaidMMDRenderer.render(
+                    living,
+                    entity.getUUID(),
+                    entityYaw,
+                    partialTick,
+                    poseStack,
+                    packedLight
+                );
+            } catch (RuntimeException e) {
+                if (!mmdskin$failureLogged) {
+                    mmdskin$failureLogged = true;
+                    MMDSKIN_LOGGER.error("Maid MMD model render failed for {}; falling back to vanilla rendering",
+                        entity.getType(), e);
+                }
+                rendered = false;
+            }
 
-        if (rendered) {
+            poseStack.popPose();
 
-            ci.cancel();
+            if (rendered) {
+                super.submit(state, poseStack, collector, camera);
+                ci.cancel();
+            }
+        } finally {
+            RenderSubmitContext.restore(previous);
         }
     }
 }
-
