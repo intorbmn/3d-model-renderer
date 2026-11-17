@@ -124,7 +124,6 @@ sourcesJar {
 sourceSets {
     main {
         java {
-            exclude "**/EntityMaidRendererMixin.java" // optional Maid compatibility deferred for 26.3
             exclude "**/VivecraftVRPlayerRendererMixin.java"
         }
         resources {
