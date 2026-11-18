@@ -95,7 +95,6 @@ public abstract class EntityMaidRendererMixin {
             poseStack.popPose();
 
             if (rendered) {
-                super.submit(state, poseStack, collector, camera);
                 ci.cancel();
             }
         } finally {
