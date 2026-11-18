@@ -1,0 +1,2 @@
+3 mixins checked: 6 FAIL, 2 WARN, 11 OK
+mixin-check selftest passed

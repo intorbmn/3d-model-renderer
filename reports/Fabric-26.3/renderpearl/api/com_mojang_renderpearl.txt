@@ -1,0 +1,5 @@
+=== com.mojang.renderpearl.package-info
+Compiled from "package-info.java"
+interface com.mojang.renderpearl.package-info {
+}
+

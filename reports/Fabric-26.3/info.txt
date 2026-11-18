@@ -1,0 +1,5 @@
+commit: 60d890e29913e677fe1e38d4bce6b859e3f7c33a
+branch: Fabric-26.3
+run:    https://github.com/intorbmn/3d-model-renderer/actions/runs/44222348287
+time:   2026-11-18T02:19:15Z
+subject: fix: remove BOM from mmdskin-fabric.mixins.json for CI mixin validator
